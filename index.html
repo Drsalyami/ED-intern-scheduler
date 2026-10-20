@@ -117,7 +117,7 @@
  .roster-matrix .matrix-phone{min-width:50px!important;max-width:75px!important;width:75px!important;font-size:7px!important}
  /* Reserve content margins in CSS rather than the browser page header/footer area. */
  .shell{padding:9mm 9mm 17mm!important}
- .pdf-attribution{display:block!important;position:fixed;bottom:3mm;left:0;right:0;text-align:center;font-size:10px;font-weight:600;color:#657183;background:white;z-index:100}
+ .pdf-attribution{display:block!important;position:fixed;bottom:3mm;left:0;right:0;text-align:center;font-size:8px;font-weight:600;color:#657183;background:white;z-index:100}
 }
 /* The personal PDF prints the chosen doctor's exact schedule cards only. */
 @media print{
@@ -208,10 +208,10 @@
   </section>
   <section id="view-roster" class="view">
    <div id="print-header" class="print-header"></div>
-   <div class="section-heading no-print"><div><p class="eyebrow">MONTHLY ROSTER</p><h2 id="roster-heading">Emergency Department Duty Roster</h2><p id="roster-meta" class="muted">Generate a roster from Settings to begin.</p></div><div class="export-actions"><select class="filter-select" id="person-filter" aria-label="Filter by doctor"><option value="all">All doctors</option></select><button class="btn light" id="grid-csv-export" type="button">↓ Excel CSV</button><button class="btn light" id="csv-export" type="button">↓ Detailed CSV</button><button class="btn light" id="print-export" type="button">⎙ PDF / Print</button></div></div>
+   <div class="section-heading no-print"><div><p class="eyebrow">MONTHLY ROSTER</p><h2 id="roster-heading">Emergency Department Duty Roster</h2><p id="roster-meta" class="muted">Generate a roster from Settings to begin.</p></div><div class="export-actions"><select class="filter-select" id="person-filter" aria-label="Filter by doctor"><option value="all">All doctors</option></select><button class="btn light" id="grid-csv-export" type="button">↓ Excel CSV</button><button class="btn light" id="csv-export" type="button">↓ Detailed CSV</button><button class="btn light" id="print-export" type="button">↓ Download PDF</button></div></div>
    <section class="workflow-panel no-print" aria-label="Roster approval and publishing">
     <div class="workflow-top"><div><strong>Roster Approval</strong><p id="workflow-status">Status: Draft</p></div><span id="workflow-badge" class="workflow-badge">DRAFT</span></div>
-    <div class="workflow-actions"><button class="btn primary" type="button" id="lock-roster">🔒 Lock Roster</button><button class="btn outline" type="button" id="unlock-roster" hidden>🔓 Unlock Roster</button><button class="btn light" type="button" id="publish-roster">📤 Publish Roster</button><button class="btn outline" type="button" id="publish-pdf">⎙ Export PDF</button></div>
+    <div class="workflow-actions"><button class="btn primary" type="button" id="lock-roster">🔒 Lock Roster</button><button class="btn outline" type="button" id="unlock-roster" hidden>🔓 Unlock Roster</button><button class="btn light" type="button" id="publish-roster">📤 Publish Roster</button><button class="btn outline" type="button" id="publish-pdf">↓ Download PDF</button></div>
     <p class="workflow-help">Lock before publishing. Published versions are saved on this device only. Export a backup after approval; this is not secure access control.</p>
    </section>
    <div id="roster-alerts"></div>
@@ -627,8 +627,170 @@ function renderPersonal(){
  }).join('');
  root.innerHTML=`<div class="personal-top"><b>${h(name)}${draft.people[i].phone?' · '+h(draft.people[i].phone):''}</b><div>${summary.M} M · ${summary.E} E · ${summary.N} N · ${summary['-']} Off · ${summary.L} Leave</div></div><div class="personal-grid">${cards}</div>`;
 }
-function setPersonalPrintPaper(enabled){const old=document.getElementById('personal-print-paper');if(enabled&&!old){const style=document.createElement('style');style.id='personal-print-paper';style.media='print';style.textContent='@page{size:A4 portrait;margin:0}';document.head.appendChild(style);}else if(!enabled&&old){old.remove();}}
-function exportPersonalPDF(){if(!current){toast('Generate a roster first.');return;}document.documentElement.classList.add('print-personal');setPersonalPrintPaper(true);window.print();}
+function exportPersonalPDF(){edDirectPdf('personal');}
+/* Direct, offline PDF export via Canvas + PDF JPEG image objects.
+   Never invokes Safari print or sends roster/contact data to a server. */
+const ED_PDF={
+ ink:'#1b3049',secondary:'#607389',teal:'#087b75',line:'#d9e4ed',navy:'#112c45',white:'#ffffff',paper:'#f4f8fb',
+ M:'#fff1bd',E:'#dbf4e4',N:'#dcecff',L:'#171b25','-':'#f2f4f8',EXTRA:'#f8cfd0'
+};
+function pdfPage(width,height){
+ const canvas=document.createElement('canvas'),scale=2;
+ canvas.width=Math.round(width*scale);canvas.height=Math.round(height*scale);
+ const c=canvas.getContext('2d',{alpha:false});c.scale(scale,scale);c.fillStyle='#fff';c.fillRect(0,0,width,height);
+ return {canvas,c,width,height};
+}
+function pdfPageFinish(page){
+ // Encode and release each canvas immediately so long rosters do not exhaust iPhone memory.
+ const jpeg64=page.canvas.toDataURL('image/jpeg',.92).split(',')[1];
+ const pixelWidth=page.canvas.width,pixelHeight=page.canvas.height;
+ page.canvas.width=0;page.canvas.height=0;
+ return {jpeg64,pixelWidth,pixelHeight};
+}
+function pdfText(c,value,x,y,opt={}){
+ const size=opt.size||13,weight=opt.bold?'700':'400',align=opt.align||'left';
+ c.font=`${weight} ${size}px -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Arial, sans-serif`;
+ c.fillStyle=opt.color||ED_PDF.ink;c.textBaseline='middle';c.textAlign=align;
+ const max=opt.max||Infinity;let s=String(value??'');
+ if(c.measureText(s).width>max){while(s.length>1&&c.measureText(s+'…').width>max)s=s.slice(0,-1);s+='…';}
+ c.fillText(s,x,y);
+ c.textAlign='left';
+}
+function pdfBox(c,x,y,w,h,fill,stroke=ED_PDF.line){c.fillStyle=fill;c.fillRect(x,y,w,h);if(stroke){c.strokeStyle=stroke;c.lineWidth=1;c.strokeRect(x+.5,y+.5,w-1,h-1);}}
+function pdfFrame(page,title,subtitle){
+ const {c,width:w,height:h}=page;
+ pdfText(c,'ED HMG',44,43,{size:20,bold:true,color:ED_PDF.teal});
+ // Attribution in the top-right corner, deliberately small and unobtrusive.
+ pdfText(c,'Prepared by Dr Saleh Alyami',w-44,35,{size:10,color:ED_PDF.secondary,align:'right'});
+ pdfText(c,title,w/2,92,{size:26,bold:true,align:'center',max:w-110});
+ pdfText(c,subtitle,w/2,122,{size:13,color:ED_PDF.secondary,align:'center',max:w-100});
+ c.fillStyle=ED_PDF.teal;c.fillRect(44,142,w-88,3);
+ // No browser URL or print timestamp can be injected: this footer is drawn into the PDF.
+ c.fillStyle=ED_PDF.line;c.fillRect(44,h-48,w-88,1);
+ pdfText(c,'Prepared by Dr Saleh Alyami',w/2,h-29,{size:9,color:ED_PDF.secondary,align:'center'});
+}
+function pdfColorForShift(s,day,i){if(s==='L')return ED_PDF.L;if(s==='-')return ED_PDF['-'];return isExtraShift(day,i)?ED_PDF.EXTRA:ED_PDF[s]||ED_PDF['-'];}
+function pdfShiftText(s,day,i){return s==='L'?'#ffffff':isExtraShift(day,i)?'#8c2022':ED_PDF.ink;}
+function pdfRosterPages(){
+ if(!current)return [];
+ const W=1540,H=1089,margin=44,dates=current.dates,people=draft.people;
+ const pages=[], maxCols=28,maxRows=14;
+ const details=(draft.details||[]).filter(p=>p.name||p.role||p.phone).slice(0,24);
+ for(let dayStart=0;dayStart<dates.length;dayStart+=maxCols){
+  const daySlice=dates.slice(dayStart,dayStart+maxCols);
+  for(let first=0;first<people.length;first+=maxRows){
+   const personSlice=people.slice(first,first+maxRows);
+   const page=pdfPage(W,H),c=page.c;
+   const range=`${daySlice[0].date} to ${daySlice[daySlice.length-1].date}  ·  ${people.length} doctors  ·  Target ${draft.targetShifts} shifts`;
+   pdfFrame(page,draft.rosterTitle||'Emergency Department Duty Roster',range);
+   let y=165;const nameW=178,totalW=66,phoneW=140,available=W-2*margin-nameW-totalW-phoneW;
+   const dw=available/daySlice.length,headerH=51,rowH=43,footH=37;
+   pdfBox(c,margin,y,nameW,headerH,'#e8f0f6');pdfText(c,'Doctor',margin+10,y+26,{size:13,bold:true});
+   daySlice.forEach((d,j)=>{const x=margin+nameW+j*dw;pdfBox(c,x,y,dw,headerH,'#e8f0f6');pdfText(c,matrixDayLabel(d.date),x+dw/2,y+19,{size:11,bold:true,align:'center'});pdfText(c,matrixDateLabel(d.date),x+dw/2,y+36,{size:10,color:ED_PDF.secondary,align:'center'});});
+   const rx=margin+nameW+available;
+   pdfBox(c,rx,y,totalW,headerH,'#e8f0f6');pdfText(c,'Total',rx+totalW/2,y+26,{size:12,bold:true,align:'center'});
+   pdfBox(c,rx+totalW,y,phoneW,headerH,'#e8f0f6');pdfText(c,'Contact',rx+phoneW/2+totalW,y+26,{size:12,bold:true,align:'center'});
+   y+=headerH;
+   personSlice.forEach((p,ki)=>{
+    const i=first+ki;
+    pdfBox(c,margin,y,nameW,rowH,ki%2?'#f5f8fb':'#ffffff');
+    pdfText(c,p.name,margin+10,y+rowH/2,{size:13,bold:true,max:nameW-20});
+    daySlice.forEach((d,j)=>{const s=displaySlot(d,i),x=margin+nameW+j*dw;pdfBox(c,x,y,dw,rowH,pdfColorForShift(s,d,i));pdfText(c,s==='-'?'–':s,x+dw/2,y+rowH/2,{size:14,bold:true,align:'center',color:pdfShiftText(s,d,i)});});
+    const count=dates.reduce((n,d)=>n+(isShift(d.assignments[i])?1:0),0);
+    pdfBox(c,rx,y,totalW,rowH,count>draft.targetShifts?'#f8cfd0':'#f6f9fb');pdfText(c,count,rx+totalW/2,y+rowH/2,{size:13,bold:true,align:'center'});
+    pdfBox(c,rx+totalW,y,phoneW,rowH,'#f6f9fb');pdfText(c,p.phone||'',rx+totalW+8,y+rowH/2,{size:11,max:phoneW-16});
+    y+=rowH;
+   });
+   ['M','E','N'].forEach((type)=>{
+    const col=ED_PDF[type],names={M:'Morning',E:'Evening',N:'Night'};
+    pdfBox(c,margin,y,nameW,footH,col);pdfText(c,names[type],margin+10,y+footH/2,{size:13,bold:true});
+    daySlice.forEach((d,j)=>{const x=margin+nameW+j*dw,n=d.assignments.filter(q=>q===type).length;pdfBox(c,x,y,dw,footH,col);pdfText(c,n,x+dw/2,y+footH/2,{size:13,bold:true,align:'center'});});
+    pdfBox(c,rx,y,totalW,footH,col);pdfText(c,daySlice.reduce((n,d)=>n+d.assignments.filter(q=>q===type).length,0),rx+totalW/2,y+footH/2,{size:13,bold:true,align:'center'});
+    pdfBox(c,rx+totalW,y,phoneW,footH,col,null);y+=footH;
+   });
+   if(dayStart+maxCols>=dates.length && first+maxRows>=people.length && details.length){
+    y+=17;
+    pdfText(c,'Details',margin,y+12,{size:17,bold:true});y+=35;
+    const detailHeight=29,dW=[410,440,W-2*margin-850];
+    const drawDetail=(a,b,d,color,bold)=>{let x=margin;[a,b,d].forEach((v,index)=>{pdfBox(c,x,y,dW[index],detailHeight,color);pdfText(c,v,x+10,y+detailHeight/2,{size:12,bold,max:dW[index]-16});x+=dW[index];});y+=detailHeight;};
+    if(y+(details.length+1)*detailHeight>H-64){
+      pages.push(pdfPageFinish(page));
+      const detailPage=pdfPage(W,H);const d=detailPage.c;pdfFrame(detailPage,draft.rosterTitle||'Emergency Department Duty Roster','Directory / Details');
+      let yy=190;pdfText(d,'Details',margin,yy,{size:20,bold:true});yy+=27;
+      function detailRow(vals,color,bold){let xx=margin;vals.forEach((v,k)=>{pdfBox(d,xx,yy,dW[k],34,color);pdfText(d,v,xx+10,yy+17,{size:13,bold,max:dW[k]-20});xx+=dW[k]});yy+=34;}
+      detailRow(['Doctor name','Role','Contact number'],'#e8f0f6',true);
+      for(const v of details)detailRow([v.name||'',v.role||'',v.phone||''],'#ffffff',false);
+      pages.push(pdfPageFinish(detailPage));continue;
+    }
+    drawDetail('Doctor name','Role','Contact number','#e8f0f6',true);
+    details.forEach(v=>drawDetail(v.name||'',v.role||'',v.phone||'','#ffffff',false));
+   }
+   pages.push(pdfPageFinish(page));
+  }
+ }
+ return pages;
+}
+function pdfPersonalPages(){
+ if(!current)return [];
+ const i=Number($('selected-person').value),p=draft.people[i];if(!p)return [];
+ const W=840,H=1188,dates=current.dates,pages=[],perPage=30,margin=42;
+ const counts={M:0,E:0,N:0,L:0,'-':0};for(const day of dates)counts[displaySlot(day,i)]++;
+ for(let at=0;at<dates.length;at+=perPage){
+  const page=pdfPage(W,H),c=page.c,slice=dates.slice(at,at+perPage);
+  pdfFrame(page,(draft.rosterTitle||'Emergency Department Duty Roster'),'Personal schedule · '+slice[0].date+' to '+slice[slice.length-1].date);
+  pdfBox(c,margin,169,W-2*margin,71,'#eaf5f6');
+  pdfText(c,p.name,margin+15,189,{size:21,bold:true,max:W-2*margin-24});
+  pdfText(c,`${counts.M} M  ·  ${counts.E} E  ·  ${counts.N} N  ·  ${counts.L} Leave  ·  ${counts['-']} Off`,margin+15,221,{size:13,color:ED_PDF.secondary});
+  if(p.phone)pdfText(c,p.phone,W-margin-12,190,{size:13,align:'right',color:ED_PDF.secondary});
+  const ncol=3,gap=10,w=(W-2*margin-gap*(ncol-1))/ncol,h=76,top=260;
+  slice.forEach((day,j)=>{
+    const s=displaySlot(day,i),x=margin+(j%3)*(w+gap),y=top+Math.floor(j/3)*(h+8),fill=pdfColorForShift(s,day,i),label=s==='M'?'Morning':s==='E'?'Evening':s==='N'?'Night':s==='L'?'Leave':'Off';
+    pdfBox(c,x,y,w,h,'#ffffff');
+    pdfText(c,matrixDayLabel(day.date)+'  '+matrixDateLabel(day.date),x+11,y+20,{size:13,bold:true});
+    pdfBox(c,x+10,y+39,w-20,28,fill,fill);
+    pdfText(c,label+(isShift(s)?'   '+draft.times[s].start+'-'+draft.times[s].end:''),x+w/2,y+53,{size:11,bold:true,align:'center',color:pdfShiftText(s,day,i),max:w-26});
+  });
+  pages.push(pdfPageFinish(page));
+ }
+ return pages;
+}
+function pdfByteBlob(pages,kind){
+ const bytes=[],offsets=[0];let count=0;
+ const ascii=s=>{const a=new TextEncoder().encode(s);bytes.push(a);count+=a.length;};
+ const raw=a=>{bytes.push(a);count+=a.length;};
+ const obj=(id,write)=>{offsets[id]=count;ascii(id+' 0 obj\n');write();ascii('\nendobj\n');};
+ raw(Uint8Array.from([37,80,68,70,45,49,46,52,10,37,226,227,207,211,10]));
+ const itemIds=pages.map((_,i)=>({image:3+i*3,stream:4+i*3,page:5+i*3}));
+ obj(1,()=>ascii('<< /Type /Catalog /Pages 2 0 R >>'));
+ obj(2,()=>ascii('<< /Type /Pages /Kids ['+itemIds.map(v=>v.page+' 0 R').join(' ')+'] /Count '+pages.length+' >>'));
+ pages.forEach((page,i)=>{
+  const ids=itemIds[i],img=atob(page.jpeg64);
+  const jpeg=new Uint8Array(img.length);for(let k=0;k<img.length;k++)jpeg[k]=img.charCodeAt(k);
+  obj(ids.image,()=>{ascii(`<< /Type /XObject /Subtype /Image /Width ${page.pixelWidth} /Height ${page.pixelHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`);raw(jpeg);ascii('\nendstream');});
+  const shape=`q ${kind==='personal'?'595.28':'1190.55'} 0 0 ${kind==='personal'?'841.89':'841.89'} 0 0 cm /Im0 Do Q\n`;
+  obj(ids.stream,()=>ascii('<< /Length '+new TextEncoder().encode(shape).length+' >>\nstream\n'+shape+'endstream'));
+  const a4=kind==='personal';
+  obj(ids.page,()=>ascii(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${a4?'595.28 841.89':'1190.55 841.89'}] /Resources << /XObject << /Im0 ${ids.image} 0 R >> >> /Contents ${ids.stream} 0 R >>`));
+ });
+ const xref=count,last=2+pages.length*3;
+ ascii(`xref\n0 ${last+1}\n0000000000 65535 f \n`);
+ for(let i=1;i<=last;i++)ascii(String(offsets[i]).padStart(10,'0')+' 00000 n \n');
+ ascii(`trailer\n<< /Size ${last+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+ return new Blob(bytes,{type:'application/pdf'});
+}
+function edDirectPdf(kind){
+ if(!current){toast('Generate a roster first.');return;}
+ try{
+  const pages=kind==='personal'?pdfPersonalPages():pdfRosterPages();if(!pages.length){toast('There is no schedule to export.');return;}
+  const blob=pdfByteBlob(pages,kind);
+  const doctor=kind==='personal'?('_'+String(draft.people[Number($('selected-person').value)].name||'Doctor').replace(/[^A-Za-z0-9\u0600-\u06ff]+/g,'_')):'';
+  const filename=`ED_HMG_${kind==='personal'?'Doctor':'Roster'}${doctor}_${draft.start}.pdf`;
+  const url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=filename;document.body.appendChild(anchor);anchor.click();anchor.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+  toast('PDF ready. On iPhone, use Share > Save to Files if it opens in a preview.');
+ }catch(error){console.error('PDF export failed',error);toast('Could not create PDF: '+(error.message||'unknown error'));}
+}
+
 function exportPersonal(){if(!current){toast('أنشئ الجدول أولًا');return}const i=Number($('selected-person').value),rows=[['Date','Day','Doctor','Shift','Start','End']];const tm={M:[draft.times.M.start,draft.times.M.end],E:[draft.times.E.start,draft.times.E.end],N:[draft.times.N.start,draft.times.N.end],'-':['','']};for(const day of current.dates){const t=displaySlot(day,i);rows.push([day.date,arabicDate(day.date),draft.people[i].name,t==='-'?'Off':t==='L'?'Leave':(isExtraShift(day,i)?t+' (Extra)':t),t==='L'?'':tm[t][0],t==='L'?'':tm[t][1]])};downloadFile(`ED_Doctor_${i+1}_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
 function render(){renderRoster();renderDetails();renderReport();renderPersonal();}
 function downloadFile(filename,content,mime){const b=new Blob([content],{type:mime}),link=document.createElement('a'),url=URL.createObjectURL(b);link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
@@ -656,10 +818,10 @@ function init(){const initial=load();draft=initial.cfg;current=initial.result;mi
  $('add-detail').addEventListener('click',()=>{if(workflow.locked)return;draft.details.push({name:'',role:'',phone:''});workflow.publishedId=null;detailsEditor();save();renderDetails()});
  $('people-editor').addEventListener('click',(e)=>{const del=e.target.closest('[data-remove]');if(!del)return;draft.people.splice(+del.dataset.remove,1);personEditor();markDirty()});
  $('add-person').addEventListener('click',addPerson);$('new-person').addEventListener('keydown',e=>{if(e.key==='Enter')addPerson()});
- $('lock-roster').addEventListener('click',lockRoster);$('unlock-roster').addEventListener('click',unlockRoster);$('publish-roster').addEventListener('click',publishRoster);$('publish-pdf').addEventListener('click',()=>{if(!current){toast('Generate a roster first.');return;}document.documentElement.classList.remove('print-personal');setPersonalPrintPaper(false);window.print()});$('version-history').addEventListener('click',versionAction);$('generate').addEventListener('click',generate);$('reset-sample').addEventListener('click',()=>{if(workflow.locked)return toast('Unlock first.');if(!confirm('ترجع بيانات المثال وتحذف الجدول الحالي من الجهاز؟'))return;let d=defaults();draft=d.cfg;current=null;workflow.publishedId=null;hydrate();save();toast('تمت استعادة المثال')});
+ $('lock-roster').addEventListener('click',lockRoster);$('unlock-roster').addEventListener('click',unlockRoster);$('publish-roster').addEventListener('click',publishRoster);$('publish-pdf').addEventListener('click',()=>edDirectPdf('roster'));$('version-history').addEventListener('click',versionAction);$('generate').addEventListener('click',generate);$('reset-sample').addEventListener('click',()=>{if(workflow.locked)return toast('Unlock first.');if(!confirm('ترجع بيانات المثال وتحذف الجدول الحالي من الجهاز؟'))return;let d=defaults();draft=d.cfg;current=null;workflow.publishedId=null;hydrate();save();toast('تمت استعادة المثال')});
  $('roster-content').addEventListener('change',(e)=>{if(!e.target.matches('select[data-day][data-grid-person]'))return;changeGridSlot(+e.target.dataset.day,+e.target.dataset.gridPerson,e.target.value)});
- $('person-filter').addEventListener('change',renderRoster);$('selected-person').addEventListener('change',renderPersonal);$('personal-csv').addEventListener('click',exportPersonal);$('personal-pdf').addEventListener('click',exportPersonalPDF);window.addEventListener('afterprint',()=>{document.documentElement.classList.remove('print-personal');setPersonalPrintPaper(false);});
- $('grid-csv-export').addEventListener('click',exportMatrix);$('csv-export').addEventListener('click',exportDaily);$('summary-export').addEventListener('click',exportReport);$('print-export').addEventListener('click',()=>{if(!current){toast('Generate a roster first.');return}document.documentElement.classList.remove('print-personal');setPersonalPrintPaper(false);window.print()});$('backup').addEventListener('click',exportBackup);$('restore').addEventListener('click',()=>$('restore-file').click());$('restore-file').addEventListener('change',e=>{if(e.target.files[0])restoreBackup(e.target.files[0]);e.target.value='' });
+ $('person-filter').addEventListener('change',renderRoster);$('selected-person').addEventListener('change',renderPersonal);$('personal-csv').addEventListener('click',exportPersonal);$('personal-pdf').addEventListener('click',exportPersonalPDF);
+ $('grid-csv-export').addEventListener('click',exportMatrix);$('csv-export').addEventListener('click',exportDaily);$('summary-export').addEventListener('click',exportReport);$('print-export').addEventListener('click',()=>edDirectPdf('roster'));$('backup').addEventListener('click',exportBackup);$('restore').addEventListener('click',()=>$('restore-file').click());$('restore-file').addEventListener('change',e=>{if(e.target.files[0])restoreBackup(e.target.files[0]);e.target.value='' });
  if('serviceWorker' in navigator && location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
 init();
