@@ -78,6 +78,24 @@
  .roster-matrix thead{display:table-header-group}
 }
 
+
+/* Phase 3: approval workflow, manual shifts and leave markers */
+.matrix-shift.MANUAL,.legend-swatch.MANUAL{background:#f9d5d5!important;color:#8e1818!important;border:1px solid #e99a9a!important}
+.matrix-shift.LEAVE,.legend-swatch.LEAVE,.shift-pill.LEAVE{background:#171b25!important;color:#ffffff!important;border:1px solid #171b25!important}
+.matrix-shift:disabled{opacity:1;cursor:default;-webkit-text-fill-color:inherit}
+.roster-matrix .summary-label{position:sticky;left:0;background:#ecf4f6;z-index:3;text-align:left;font-weight:900}
+.roster-matrix tfoot .summary-M td{background:#fff8dd}.roster-matrix tfoot .summary-E td{background:#edf9ee}.roster-matrix tfoot .summary-N td{background:#ebf4ff}
+.roster-matrix tfoot td.summary-total{font-size:12px;color:#213b5a}
+.workflow-panel{border:1px solid #b7d8d4;border-radius:16px;padding:17px;background:#f0faf8;margin-bottom:17px}
+.workflow-top{display:flex;justify-content:space-between;align-items:center;gap:15px}.workflow-top strong{font-size:18px}.workflow-top p{margin:4px 0 0;color:#486478;font-size:12px;direction:ltr;text-align:left}
+.workflow-badge{font-size:11px;font-weight:900;letter-spacing:.07em;border-radius:30px;padding:7px 12px;background:#e0e8ef;color:#365064}
+.workflow-badge.LOCKED{background:#dce8ff;color:#26508e}.workflow-badge.PUBLISHED{background:#d2f1e4;color:#0a6952}
+.workflow-actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 7px;direction:ltr;justify-content:flex-start}.workflow-actions [hidden]{display:none}
+.workflow-help{font-size:12px;color:#547082;margin:5px 0 0;line-height:1.7}
+.history-panel{margin-top:20px}.history-item{border-top:1px solid var(--line);padding:12px 0;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;direction:ltr;text-align:left}
+.history-item .history-meta{font-size:12px;color:#65768c}.history-actions{display:flex;gap:7px;flex-wrap:wrap}
+.history-actions button{font-size:11px;padding:7px 9px}.locked-notice{font-size:12px;color:#23507a;font-weight:700;padding:4px 0}
+@media print{.workflow-panel,.history-panel{display:none!important}.roster-matrix .summary-label{position:static!important}.roster-matrix tfoot tr{break-inside:avoid}.matrix-shift.MANUAL,.matrix-shift.LEAVE{print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important}}
   </style>
 
 
@@ -87,7 +105,7 @@
  <header class="main-header no-print">
   <div class="brand-icon" aria-hidden="true">✚</div>
   <div><p class="eyebrow">ED · INTERN MANAGEMENT</p><h1>Intern Scheduler</h1><p class="heading-sub">مولّد مناوبات الطوارئ الذكي</p></div>
-  <div class="header-chip">نسخة 1.3</div>
+  <div class="header-chip">نسخة 1.4</div>
  </header>
  <section class="intro no-print">
   <span class="glow"></span>
@@ -144,8 +162,14 @@
   <section id="view-roster" class="view">
    <div id="print-header" class="print-header"></div>
    <div class="section-heading no-print"><div><p class="eyebrow">MONTHLY ROSTER</p><h2>ED Shift Roster</h2><p id="roster-meta" class="muted">Generate a roster from Settings to begin.</p></div><div class="export-actions"><select class="filter-select" id="person-filter" aria-label="Filter by intern"><option value="all">All interns</option></select><button class="btn light" id="grid-csv-export" type="button">↓ Excel CSV</button><button class="btn light" id="csv-export" type="button">↓ Detailed CSV</button><button class="btn light" id="print-export" type="button">⎙ PDF / Print</button></div></div>
+   <section class="workflow-panel no-print" aria-label="Roster approval and publishing">
+    <div class="workflow-top"><div><strong>Roster Approval</strong><p id="workflow-status">Status: Draft</p></div><span id="workflow-badge" class="workflow-badge">DRAFT</span></div>
+    <div class="workflow-actions"><button class="btn primary" type="button" id="lock-roster">🔒 Lock Roster</button><button class="btn outline" type="button" id="unlock-roster" hidden>🔓 Unlock Roster</button><button class="btn light" type="button" id="publish-roster">📤 Publish Roster</button><button class="btn outline" type="button" id="publish-pdf">⎙ Export PDF</button></div>
+    <p class="workflow-help">Lock before publishing. Published versions are saved on this device only. Export a backup after approval; this is not secure access control.</p>
+   </section>
    <div id="roster-alerts"></div>
    <div id="roster-content"></div>
+   <section class="panel history-panel no-print"><div class="panel-top"><div><h3>Version History</h3><p>Local approved snapshots (not shared with other devices)</p></div><span id="history-count" class="count-badge">0 versions</span></div><div id="version-history"></div></section>
   </section>
   <section id="view-personal" class="view">
    <div class="section-heading"><div><p class="eyebrow">PERSONAL ROSTER</p><h2>جدول كل انتيرن</h2><p class="muted">اختر الاسم، ثم اعرض المناوبات أو صدّرها.</p></div></div>
@@ -157,7 +181,7 @@
    <div id="report-content"></div>
   </section>
  </main>
- <footer class="footer no-print"><p>ED Intern Scheduler · v1.3 <span>·</span> يعمل محليًا في المتصفح. البيانات لا تُرسل إلى خادم.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
+ <footer class="footer no-print"><p>ED Intern Scheduler · v1.4 <span>·</span> يعمل محليًا في المتصفح. البيانات لا تُرسل إلى خادم.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -342,10 +366,16 @@ if(typeof module!=='undefined'&&module.exports)module.exports=api;
 'use strict';
 const G=window.EDGenerator, STORAGE='ed-interns-roster-v1';
 const $=id=>document.getElementById(id), h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let draft, current=null,toastTimer;
+let draft, current=null,toastTimer,workflow={locked:false,publishedId:null,versions:[]};
+const isShift=x=>['M','E','N'].includes(x);
+const copy=o=>JSON.parse(JSON.stringify(o));
+const dayKey=(d,i)=>d+'|'+i;
+const leaveDay=(d,i)=>draft.people[i].off.includes(d);
+const displaySlot=(day,i)=>leaveDay(day.date,i)?'L':day.assignments[i];
+const isManual=(day,i)=>!!(current&&current.manualShifts&&current.manualShifts[dayKey(day.date,i)]===day.assignments[i]&&isShift(day.assignments[i]));
 function defaults(){return {cfg:{start:'2026-11-01',days:28,maxConsec:5,targetShifts:16,times:{M:{start:'07:00',end:'15:00'},E:{start:'15:00',end:'23:00'},N:{start:'23:00',end:'07:00'}},coverage:{M:2,E:2,N:1},people:Array.from({length:8},(_,i)=>({name:'Intern '+String(i+1).padStart(2,'0'),off:[]}))},result:null};}
-function load(){try{let d=JSON.parse(localStorage.getItem(STORAGE));if(d?.cfg?.people?.length){const x=defaults().cfg;d.cfg.targetShifts??=16;d.cfg.times??=x.times;for(const t of ['M','E','N'])d.cfg.times[t]??=x.times[t];return d;}}catch(_e){}return defaults()}
-function save(){try{localStorage.setItem(STORAGE,JSON.stringify({cfg:draft,result:current}));}catch(_e){ /* private browsing can disable persistence */ }}
+function load(){try{let d=JSON.parse(localStorage.getItem(STORAGE));if(d?.cfg?.people?.length){const x=defaults().cfg;d.cfg.targetShifts??=16;d.cfg.times??=x.times;for(const t of ['M','E','N'])d.cfg.times[t]??=x.times[t];workflow={locked:!!d.workflow?.locked,publishedId:d.workflow?.publishedId||null,versions:Array.isArray(d.workflow?.versions)?d.workflow.versions:[]};return d;}}catch(_e){}return defaults()}
+function save(){try{localStorage.setItem(STORAGE,JSON.stringify({cfg:draft,result:current,workflow}));}catch(_e){ /* private browsing can disable persistence */ }}
 function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3800)}
 function switchTab(id){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+id));document.querySelector('.tabs')?.scrollIntoView({behavior:'smooth',block:'start'})}
 function personEditor(){const content=$('people-editor');content.innerHTML=`<div class="mini-heading"><span>#</span><span>الاسم</span><span>أيام مستثناة</span><span></span></div>`+draft.people.map((p,i)=>`<div class="person-row" data-index="${i}"><span class="person-index">${i+1}</span><input aria-label="اسم الانتيرن ${i+1}" class="person-name" data-person="${i}" value="${h(p.name)}"><input aria-label="إجازات الانتيرن ${i+1}" class="off-dates" placeholder="2026-11-12, ..." data-off="${i}" value="${h(p.off.join(', '))}"><button type="button" class="remove-person" data-remove="${i}" aria-label="حذف الانتيرن">×</button></div>`).join('');$('people-count').textContent=`${draft.people.length} أشخاص`;}
@@ -354,27 +384,28 @@ function readSettings(){draft.start=$('start').value;draft.days=Number($('days')
 function renderTargetPreview(){const el=$('target-preview'),total=(draft.coverage.M+draft.coverage.E+draft.coverage.N)*draft.days,wanted=draft.people.length*draft.targetShifts;el.classList.toggle('mismatch',wanted!==total);el.textContent=`AUTO LIMIT: ${draft.targetShifts} shifts/intern (8 hours each) · Capacity ${wanted} / Required ${total}. `+(total>wanted?`⚠️ At least ${total-wanted} shifts cannot be assigned automatically. Add manually if needed.`:total===wanted?'✓ Capacity matches demand.':'✓ Auto-generation will not exceed the selected target.');}
 
 function parseOff(str){return [...new Set(str.split(/[\s,،;]+/g).map(x=>x.trim()).filter(Boolean))].sort()}
-function markDirty(){current=null;$('generation-status').textContent='تم تعديل الإعدادات. ولّد جدولًا جديدًا.';save();render();renderTargetPreview();}
-function addPerson(){const input=$('new-person'),name=input.value.trim();if(!name){toast('أدخل اسم الانتيرن أولًا');return}if(draft.people.length>=40){toast('الحد الحالي 40 انتيرن');return}if(draft.people.some(p=>p.name.toLowerCase()===name.toLowerCase())){toast('الاسم موجود مسبقًا');return}draft.people.push({name,off:[]});input.value='';personEditor();markDirty()}
-function generate(){readSettings();const error=G.validInput(draft);if(error){$('generation-status').textContent='⚠️ '+error;toast(error);return}const btn=$('generate');btn.disabled=true;btn.textContent='⏳ يجري توزيع المناوبات...';$('generation-status').textContent='جاري حساب التغطية والإحصائيات.';
+function markDirty(){if(workflow.locked){toast('Unlock roster before editing settings.');return;}workflow.publishedId=null;current=null;$('generation-status').textContent='تم تعديل الإعدادات. ولّد جدولًا جديدًا.';save();render();renderTargetPreview();}
+function addPerson(){if(workflow.locked)return toast('Unlock roster before editing.');const input=$('new-person'),name=input.value.trim();if(!name){toast('أدخل اسم الانتيرن أولًا');return}if(draft.people.length>=40){toast('الحد الحالي 40 انتيرن');return}if(draft.people.some(p=>p.name.toLowerCase()===name.toLowerCase())){toast('الاسم موجود مسبقًا');return}draft.people.push({name,off:[]});input.value='';personEditor();markDirty()}
+function generate(){if(workflow.locked)return toast('Unlock roster before regenerating.');readSettings();const error=G.validInput(draft);if(error){$('generation-status').textContent='⚠️ '+error;toast(error);return}const btn=$('generate');btn.disabled=true;btn.textContent='⏳ يجري توزيع المناوبات...';$('generation-status').textContent='جاري حساب التغطية والإحصائيات.';
  setTimeout(()=>{
-  try{let res=G.generate(draft,{seed:Date.now()%2147483647});if(!res.ok){toast(res.error);$('generation-status').textContent='⚠️ '+res.error;return}const errs=G.audit(draft,res);if(errs.length){toast('تم إيقاف الجدول بسبب تعارض في الفحص.');$('generation-status').textContent='تعارض: '+errs.slice(0,2).join(', ');return}current=res;save();const planned=draft.days*(draft.coverage.M+draft.coverage.E+draft.coverage.N),filled=res.counts.reduce((a,x)=>a+x.all,0);$('generation-status').textContent=filled<planned?`⚠️ Generated ${res.dates.length} days with ${planned-filled} unfilled shifts. Auto cap: ${draft.targetShifts}/intern.`:`✅ Generated ${res.dates.length} days with full coverage and no safety conflicts.`;render();switchTab('roster')}catch(e){$('generation-status').textContent='خطأ غير متوقع: '+e.message;toast('لم ينجح التوليد');}finally{btn.disabled=false;btn.textContent='⚡ توليد الجدول تلقائيًا'}
+  try{let res=G.generate(draft,{seed:Date.now()%2147483647});if(!res.ok){toast(res.error);$('generation-status').textContent='⚠️ '+res.error;return}const errs=G.audit(draft,res);if(errs.length){toast('تم إيقاف الجدول بسبب تعارض في الفحص.');$('generation-status').textContent='تعارض: '+errs.slice(0,2).join(', ');return}current=res;current.manualShifts={};workflow.publishedId=null;workflow.locked=false;save();const planned=draft.days*(draft.coverage.M+draft.coverage.E+draft.coverage.N),filled=res.counts.reduce((a,x)=>a+x.all,0);$('generation-status').textContent=filled<planned?`⚠️ Generated ${res.dates.length} days with ${planned-filled} unfilled shifts. Auto cap: ${draft.targetShifts}/intern.`:`✅ Generated ${res.dates.length} days with full coverage and no safety conflicts.`;render();switchTab('roster')}catch(e){$('generation-status').textContent='خطأ غير متوقع: '+e.message;toast('لم ينجح التوليد');}finally{btn.disabled=false;btn.textContent='⚡ توليد الجدول تلقائيًا'}
  },30);
 }
 function arabicDate(iso){return new Date(iso+'T12:00:00Z').toLocaleDateString('en-US',{day:'2-digit',month:'short',weekday:'short',timeZone:'UTC'})}
 function groupedDates(dates){let result=[];for(let i=0;i<dates.length;i+=7)result.push(dates.slice(i,i+7));return result}
-function recount(){if(!current)return;const counts=draft.people.map((p,i)=>({name:p.name,all:0,M:0,E:0,N:0,wknd:0,hours:0}));current.dates.forEach(day=>day.assignments.forEach((s,i)=>{if(s!=='-'){const c=counts[i];c.all++;c[s]++;c.hours+=8;if(G.weekend(day.date))c.wknd++}}));current.counts=counts;}
+function recount(){if(!current)return;const counts=draft.people.map((p,i)=>({name:p.name,all:0,M:0,E:0,N:0,wknd:0,hours:0}));current.dates.forEach(day=>day.assignments.forEach((s,i)=>{if(isShift(s)){const c=counts[i];c.all++;c[s]++;c.hours+=8;if(G.weekend(day.date))c.wknd++}}));current.counts=counts;}
 function matrixDayLabel(date){return new Date(date+'T12:00:00Z').toLocaleDateString('en-US',{weekday:'short',timeZone:'UTC'});}
 function matrixDateLabel(date){return date.slice(8,10)+'/'+date.slice(5,7);}
 function renderRoster(){
  const target=$('roster-content'),meta=$('roster-meta'),alert=$('roster-alerts');
  if(!current){
   $('print-header').textContent='';meta.textContent='Generate a roster from Settings.';alert.innerHTML='';
-  target.innerHTML='<div class="empty"><div style="font-size:36px">🗓️</div><b>No roster yet</b>Use Generate in Settings to begin.</div>';return;
+  target.innerHTML='<div class="empty"><div style="font-size:36px">🗓️</div><b>No roster yet</b>Use Generate in Settings to begin.</div>';renderWorkflow();return;
  }
  const savedScroll=target.querySelector('.roster-matrix-scroll');
  const oldLeft=savedScroll?savedScroll.scrollLeft:0,oldTop=savedScroll?savedScroll.scrollTop:0;
- $('print-header').textContent='Emergency Department Roster · Dr Saleh Alyami';
+ const publishedVersion=workflow.publishedId?workflow.versions.find(v=>v.id===workflow.publishedId):null;
+ $('print-header').textContent='Emergency Department Intern Duty Roster · Prepared by Dr. Saleh Alyami · '+(workflow.publishedId?('PUBLISHED '+workflow.publishedId+(publishedVersion?' · '+new Date(publishedVersion.at).toLocaleString('en-GB'):'')):workflow.locked?'LOCKED · NOT PUBLISHED':'DRAFT · NOT APPROVED')+' · '+draft.start;
  const dates=current.dates,filter=$('person-filter'),previousFilter=filter.value||'all';
  filter.innerHTML='<option value="all">All interns</option>'+draft.people.map((p,i)=>`<option value="${i}">${h(p.name)}</option>`).join('');
  filter.value=(previousFilter==='all'||(Number.isInteger(+previousFilter)&&+previousFilter<draft.people.length))?previousFilter:'all';
@@ -383,57 +414,132 @@ function renderRoster(){
  const errs=G.audit(draft,current);
  let missing=0,extra=0,affectedDays=0;
  for(const day of dates){let different=false;for(const t of ['M','E','N']){const found=day.assignments.filter(x=>x===t).length,expected=draft.coverage[t];missing+=Math.max(0,expected-found);extra+=Math.max(0,found-expected);if(found!==expected)different=true;}if(different)affectedDays++;}
- const overLimit=draft.people.map((p,i)=>({name:p.name,count:dates.filter(d=>d.assignments[i]!=='-').length})).filter(p=>p.count>draft.targetShifts);
+ const overLimit=draft.people.map((p,i)=>({name:p.name,count:dates.filter(d=>isShift(d.assignments[i])).length})).filter(p=>p.count>draft.targetShifts);
  alert.innerHTML=(errs.length?`<div class="alert">⚠️ Safety conflicts: ${h(errs.slice(0,4).join(' / '))}</div>`:'<div class="success-note">✓ Rest and leave checks passed.</div>')+(missing?`<div class="alert">⚠️ UNFILLED SHIFTS: ${missing} (${affectedDays} affected days). Review coverage before approval.</div>`:'')+(extra?`<div class="alert">⚠️ EXTRA DAILY COVERAGE: ${extra} manually added shifts.</div>`:'')+(overLimit.length?`<div class="alert">⚠️ OVER TARGET (existing or manual changes): ${h(overLimit.map(p=>p.name+' '+p.count+'/'+draft.targetShifts).join(', '))}</div>`:'');
 
  const peopleIds=draft.people.map((_,i)=>i).filter(i=>filter.value==='all'||i===Number(filter.value));
- const legend=['M','E','N','OFF'].map((t,i)=>`<span class="legend-item"><span class="legend-swatch ${t}">${t==='OFF'?'–':t}</span> ${['Morning','Evening','Night','Off'][i]}</span>`).join('');
+ const legend=[['M','M','Morning'],['E','E','Evening'],['N','N','Night'],['MANUAL','+','Manual shift'],['LEAVE','L','Leave'],['OFF','–','Off']].map(([t,code,desc])=>`<span class="legend-item"><span class="legend-swatch ${t}">${code}</span> ${desc}</span>`).join('');
  const header=dates.map((d,j)=>`<th scope="col" class="${G.weekend(d.date)?'weekend-col':''} ${j>0&&j%7===0?'week-boundary':''}" title="${h(d.date)}"><span class="matrix-day">${h(matrixDayLabel(d.date))}</span><span class="matrix-date">${h(matrixDateLabel(d.date))}</span></th>`).join('');
  const rows=peopleIds.map(i=>{
   const cells=dates.map((d,j)=>{
-   const typ=d.assignments[i],color=typ==='-'?'OFF':typ;
-   const opts=[['-','–'],['M','M'],['E','E'],['N','N']].map(([v,label])=>`<option value="${v}" ${v===typ?'selected':''}>${label}</option>`).join('');
-   return `<td class="${typ==='-'?'date-off':''} ${j>0&&j%7===0?'week-boundary':''}"><select class="matrix-shift ${color}" data-day="${j}" data-grid-person="${i}" aria-label="${h(draft.people[i].name)}، ${h(d.date)}: ${typ==='-'?'Off':typ}" title="Choose an assigned shift (manual edits may exceed your cap)">${opts}</select></td>`;
+   const typ=displaySlot(d,i),manual=isManual(d,i),color=typ==='L'?'LEAVE':typ==='-'?'OFF':manual?'MANUAL':typ;
+   const opts=[['-','–'],['M','M'],['E','E'],['N','N'],['L','L']].map(([v,label])=>`<option value="${v}" ${v===typ?'selected':''}>${label}</option>`).join('');
+   const title=typ==='L'?'Leave requested (manual, not a work shift)':manual?'Manual assignment '+typ:typ==='-'?'Off':typ;
+   return `<td class="${typ==='-'?'date-off':''} ${j>0&&j%7===0?'week-boundary':''}"><select class="matrix-shift ${color}" data-day="${j}" data-grid-person="${i}" aria-label="${h(draft.people[i].name)}, ${h(d.date)}: ${h(title)}" title="${h(title)}" ${workflow.locked?'disabled':''}>${opts}</select></td>`;
   }).join('');
-  const total=dates.reduce((acc,d)=>acc+(d.assignments[i]!=='-'?1:0),0);
+  const total=dates.reduce((acc,d)=>acc+(isShift(d.assignments[i])?1:0),0);
   return `<tr><th scope="row" class="matrix-name">${h(draft.people[i].name)}</th>${cells}<td class="matrix-total">${total}</td></tr>`;
  }).join('');
- const footer=dates.map((d,j)=>`<td class="${j>0&&j%7===0?'week-boundary':''}">${d.assignments.filter(v=>v!=='-').length}</td>`).join('');
- target.innerHTML=`<div class="roster-legend" aria-label="Shift color legend">${legend}</div><p class="matrix-help">Swipe sideways to see all days. Intern names stay fixed on the left. Tap any cell to change M / E / N / Off manually. Manual edits can exceed the target only after confirmation; rest and leave rules still apply.</p><div class="roster-matrix-scroll" tabindex="0" role="region" aria-label="Scrollable intern shift roster"><table class="roster-matrix" aria-label="Emergency department shift roster"><thead><tr><th scope="col" class="matrix-name">Intern</th>${header}<th scope="col" class="matrix-total">Total</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td class="matrix-name matrix-key">Coverage</td>${footer}<td class="matrix-total">${dates.reduce((a,d)=>a+d.assignments.filter(v=>v!=='-').length,0)}</td></tr></tfoot></table></div><p class="matrix-grid-footnote">Colors: M light yellow, E light green, N light blue; – means Off. Export as Excel CSV or print to PDF.</p>`;
+ const footer=['M','E','N'].map(type=>{
+  const cells=dates.map((d,j)=>`<td class="${j>0&&j%7===0?'week-boundary':''}">${d.assignments.filter(t=>t===type).length}</td>`).join('');
+  const total=dates.reduce((sum,d)=>sum+d.assignments.filter(t=>t===type).length,0);
+  return `<tr class="summary-${type}"><th class="matrix-name summary-label">${{M:'Morning',E:'Evening',N:'Night'}[type]}</th>${cells}<td class="matrix-total summary-total">${total}</td></tr>`;
+ }).join('');
+ target.innerHTML=`<div class="roster-legend" aria-label="Shift color legend">${legend}</div><p class="matrix-help">Swipe to view all dates. Intern names stay fixed on the left. M: yellow · E: green · N: blue · Manual shifts: red · L (Leave): black · Off: grey. Counts appear in the three rows at the bottom. ${workflow.locked?'Roster locked: unlock to make changes.':'Tap a cell to edit; additional manual shifts require confirmation.'}</p><div class="roster-matrix-scroll" tabindex="0" role="region" aria-label="Scrollable intern shift roster"><table class="roster-matrix" aria-label="Emergency department shift roster"><thead><tr><th scope="col" class="matrix-name">Intern</th>${header}<th scope="col" class="matrix-total">Total</th></tr></thead><tbody>${rows}</tbody><tfoot>${footer}</tfoot></table></div><p class="matrix-grid-footnote">All roster labels and weekday abbreviations use English. Red = manually assigned; black L = leave request (not counted as a shift). Print to PDF to preserve colors.</p>`;
  const newScroll=target.querySelector('.roster-matrix-scroll');
  if(newScroll){newScroll.scrollLeft=oldLeft;newScroll.scrollTop=oldTop;}
+ renderWorkflow();
 }
 function changeGridSlot(dayIndex,personIndex,newShift){
- if(!current||!['M','E','N','-'].includes(newShift))return;
- const arr=current.dates[dayIndex]?.assignments;
+ if(!current||workflow.locked){render();toast('Unlock roster before editing.');return;}
+ if(!['M','E','N','-','L'].includes(newShift))return;
+ const day=current.dates[dayIndex],arr=day?.assignments;
  if(!arr||personIndex<0||personIndex>=arr.length)return;
- const previous=arr[personIndex];if(previous===newShift)return;
- const count=current.dates.reduce((n,d)=>n+(d.assignments[personIndex]!=='-'?1:0),0);
- if(previous==='-'&&newShift!=='-'&&count>=draft.targetShifts){
+ const previous=displaySlot(day,personIndex);if(previous===newShift)return;
+ const prevOff=[...draft.people[personIndex].off],oldAssignment=arr[personIndex],key=dayKey(day.date,personIndex),oldManual=current.manualShifts?.[key];
+ const count=current.dates.reduce((n,d)=>n+(isShift(d.assignments[personIndex])?1:0),0);
+ if(!isShift(previous)&&isShift(newShift)&&count>=draft.targetShifts){
   if(!confirm(`${draft.people[personIndex].name} has ${count}/${draft.targetShifts} shifts. Add another shift MANUALLY beyond the selected limit?`)){render();return;}
  }
- arr[personIndex]=newShift;
+ // Leave request is a non-work day. A manual L also updates leave dates used by future auto-generation.
+ if(newShift==='L')draft.people[personIndex].off=[...new Set([...prevOff,day.date])].sort();
+ else draft.people[personIndex].off=prevOff.filter(d=>d!==day.date);
+ arr[personIndex]=isShift(newShift)?newShift:'-';
+ current.manualShifts??={};
+ if(isShift(newShift))current.manualShifts[key]=newShift;else delete current.manualShifts[key];
  const conflicts=G.audit(draft,current);
- if(conflicts.length){arr[personIndex]=previous;render();toast('Edit rejected: '+conflicts.slice(0,2).join(' | '));return;}
- recount();save();render();toast('Manual change saved. Check coverage and targets.');
+ if(conflicts.length){arr[personIndex]=oldAssignment;draft.people[personIndex].off=prevOff;
+  if(oldManual===undefined)delete current.manualShifts[key];else current.manualShifts[key]=oldManual;
+  render();toast('Edit rejected: '+conflicts.slice(0,2).join(' | '));return;}
+ workflow.publishedId=null;recount();save();personEditor();render();toast(newShift==='L'?'Leave marked. Coverage updated.':'Manual change saved. Check coverage and targets.');
 }
 
+function shortage(){
+ if(!current)return 0;
+ return current.dates.reduce((sum,day)=>sum+['M','E','N'].reduce((a,t)=>a+Math.max(0,draft.coverage[t]-day.assignments.filter(x=>x===t).length),0),0);
+}
+function renderWorkflow(){
+ const badge=$('workflow-badge'),status=$('workflow-status');
+ const published=workflow.publishedId&&workflow.locked;
+ const state=!current?'NO ROSTER':published?'PUBLISHED':workflow.locked?'LOCKED':'DRAFT';
+ badge.textContent=state;badge.className='workflow-badge '+state;
+ status.textContent='Status: '+state+(published?' · '+workflow.publishedId:'')+(current?' · '+shortage()+' unfilled shifts':'');
+ $('lock-roster').hidden=!!workflow.locked;
+ $('unlock-roster').hidden=!workflow.locked;
+ $('lock-roster').disabled=!current;
+ $('unlock-roster').disabled=!current;
+ $('publish-roster').disabled=!current||!workflow.locked||!!workflow.publishedId;
+ $('generate').disabled=!!workflow.locked;
+ $('reset-sample').disabled=!!workflow.locked;
+ $('add-person').disabled=!!workflow.locked;
+ $('new-person').disabled=!!workflow.locked;
+ ['start','days','targetShifts','maxConsec','covM','covE','covN','startM','endM','startE','endE','startN','endN'].forEach(id=>$(id).disabled=!!workflow.locked);
+ document.querySelectorAll('.person-name,.off-dates,.remove-person').forEach(el=>el.disabled=!!workflow.locked);
+ renderHistory();
+}
+function lockRoster(){
+ if(!current)return toast('Generate a roster first.');
+ const conflicts=G.audit(draft,current);if(conflicts.length)return toast('Resolve safety conflicts before locking.');
+ const missing=shortage();
+ if(missing&&!confirm(`There are ${missing} unfilled shifts. Lock this INCOMPLETE roster anyway?`))return;
+ workflow.locked=true;save();render();toast('Roster locked.');
+}
+function unlockRoster(){
+ if(!current)return;
+ if(!confirm('Unlock this roster? New edits will create a draft; previous published versions stay in history.'))return;
+ workflow.locked=false;workflow.publishedId=null;save();render();toast('Roster unlocked for edits.');
+}
+function publishRoster(){
+ if(!current||!workflow.locked)return toast('Lock the roster before publishing.');
+ if(workflow.publishedId)return toast('This roster is already published.');
+ const conflicts=G.audit(draft,current);if(conflicts.length)return toast('Resolve rest/leave conflicts before publishing.');
+ const missing=shortage();
+ if(missing&&!confirm(`${missing} shifts remain unfilled. Publish an INCOMPLETE roster with this warning?`))return;
+ const next=Math.max(0,...workflow.versions.map(v=>Number(v.number)||0))+1;
+ const stamp=new Date().toISOString(),label='V'+next;
+ workflow.versions.push({number:next,id:label,at:stamp,missing,cfg:copy(draft),result:copy(current)});
+ workflow.publishedId=label;save();render();toast('Published locally as '+label+'. Export the PDF / JSON backup to share it.');
+}
+function renderHistory(){
+ const root=$('version-history');$('history-count').textContent=workflow.versions.length+' versions';
+ if(!workflow.versions.length){root.innerHTML='<p class="muted small">No published versions yet. Lock and Publish to save the first snapshot.</p>';return;}
+ root.innerHTML=[...workflow.versions].reverse().map(v=>`<div class="history-item"><div><strong>${h(v.id)} · ${h(v.cfg.start)} (${v.cfg.days} days)</strong><div class="history-meta">${h(new Date(v.at).toLocaleString('en-GB'))} · ${v.missing||0} unfilled · ${v.result.dates.length} days</div></div><div class="history-actions"><button type="button" class="btn outline" data-history="export" data-version="${v.number}">↓ JSON</button><button type="button" class="btn outline" data-history="restore" data-version="${v.number}">↶ Restore draft</button></div></div>`).join('');
+}
+function versionAction(e){
+ const btn=e.target.closest('button[data-history]');if(!btn)return;
+ const v=workflow.versions.find(v=>v.number===Number(btn.dataset.version));if(!v)return;
+ if(btn.dataset.history==='export')return downloadFile(`ED_Published_${v.id}_${v.cfg.start}.json`,JSON.stringify(v,null,2),'application/json');
+ if(btn.dataset.history==='restore'){
+  if(!confirm(`Restore ${v.id} as a new EDITABLE draft? Your current working roster will be replaced. Published history is preserved. Export a backup first if needed.`))return;
+  draft=copy(v.cfg);current=copy(v.result);workflow.locked=false;workflow.publishedId=null;save();hydrate();switchTab('roster');toast(v.id+' restored as a draft.');
+ }
+}
 function renderReport(){const root=$('report-content');if(!current){root.innerHTML='<div class="empty">أنشئ الجدول لعرض ملخص المناوبات.</div>';return}recount();const c=current.counts;const total=c.reduce((a,x)=>a+x.all,0),hours=c.reduce((a,x)=>a+x.hours,0),v=(key)=>{const n=c.map(i=>i[key]);return `${Math.min(...n)}–${Math.max(...n)}`};const errs=G.audit(draft,current);
- root.innerHTML=`<div class="numbers-grid"><div class="metric"><span class="value">${total}</span><span class="desc">إجمالي المناوبات</span></div><div class="metric"><span class="value">${hours}</span><span class="desc">إجمالي الساعات</span></div><div class="metric"><span class="value">${v('N')}</span><span class="desc">الليالي لكل شخص</span></div><div class="metric"><span class="value">${errs.length===0?'✓':errs.length}</span><span class="desc">${errs.length?'تعارضات تحتاج مراجعة':'لا تعارضات مكتشفة'}</span></div></div><div class="table-wrap"><table><thead><tr><th>الانتيرن</th><th>Morning</th><th>Evening</th><th>Night</th><th>الويكند</th><th>كل الشفتات</th><th>المطلوب</th><th>الفرق</th><th>ساعات</th></tr></thead><tbody>${c.map(p=>`<tr><td>${h(p.name)}</td><td>${p.M}</td><td>${p.E}</td><td>${p.N}</td><td>${p.wknd}</td><td><b>${p.all}</b></td><td>${draft.targetShifts||'غير محدد'}</td><td class="difference ${p.all===draft.targetShifts?'exact':p.all>draft.targetShifts?'over':'under'}">${draft.targetShifts>0?(p.all>draft.targetShifts?'+':'')+(p.all-draft.targetShifts):'—'}</td><td>${p.hours}</td></tr>`).join('')}</tbody></table></div><p class="fair-note">المدى بين الموظفين: إجمالي الشفتات <b>${v('all')}</b>، ليالي <b>${v('N')}</b>، ويكند <b>${v('wknd')}</b>. تُحتسب الجمعة والسبت ويكند. الهدف لكل متدرب ${draft.targetShifts} شفت، ومدة كل شفت 8 ساعات. هذا التقرير يختبر التوزيع الحسابي ولا يحل محل مراجعة سياسات المستشفى.</p>`;
+ root.innerHTML=`<div class="numbers-grid"><div class="metric"><span class="value">${total}</span><span class="desc">إجمالي المناوبات</span></div><div class="metric"><span class="value">${hours}</span><span class="desc">إجمالي الساعات</span></div><div class="metric"><span class="value">${v('N')}</span><span class="desc">الليالي لكل شخص</span></div><div class="metric"><span class="value">${errs.length===0?'✓':errs.length}</span><span class="desc">${errs.length?'تعارضات تحتاج مراجعة':'لا تعارضات مكتشفة'}</span></div></div><div class="table-wrap"><table><thead><tr><th>الانتيرن</th><th>Morning</th><th>Evening</th><th>Night</th><th>الويكند</th><th>Leave</th><th>Manual</th><th>كل الشفتات</th><th>المطلوب</th><th>الفرق</th><th>ساعات</th></tr></thead><tbody>${c.map((p,i)=>`<tr><td>${h(p.name)}</td><td>${p.M}</td><td>${p.E}</td><td>${p.N}</td><td>${p.wknd}</td><td>${current.dates.filter(d=>leaveDay(d.date,i)).length}</td><td>${current.dates.filter(d=>isManual(d,i)).length}</td><td><b>${p.all}</b></td><td>${draft.targetShifts||'غير محدد'}</td><td class="difference ${p.all===draft.targetShifts?'exact':p.all>draft.targetShifts?'over':'under'}">${draft.targetShifts>0?(p.all>draft.targetShifts?'+':'')+(p.all-draft.targetShifts):'—'}</td><td>${p.hours}</td></tr>`).join('')}</tbody></table></div><p class="fair-note">المدى بين الموظفين: إجمالي الشفتات <b>${v('all')}</b>، ليالي <b>${v('N')}</b>، ويكند <b>${v('wknd')}</b>. تُحتسب الجمعة والسبت ويكند. الهدف لكل متدرب ${draft.targetShifts} شفت، ومدة كل شفت 8 ساعات. هذا التقرير يختبر التوزيع الحسابي ولا يحل محل مراجعة سياسات المستشفى.</p>`;
 }
 function renderPersonal(){
  const sel=$('selected-person'),root=$('personal-content'),old=Number(sel.value)||0;
  sel.innerHTML=draft.people.map((p,i)=>`<option value="${i}" ${i===Math.min(old,draft.people.length-1)?'selected':''}>${h(p.name)}</option>`).join('');
  if(!current){root.innerHTML='<div class="empty">أنشئ الجدول من الإعدادات أولًا.</div>';return;}
  const i=Number(sel.value),name=draft.people[i].name;
- const shiftLabels={M:'Morning',E:'Evening',N:'Night','-':'Off'};
- const summary={M:0,E:0,N:0,'-':0};
- const cards=current.dates.map(day=>{const t=day.assignments[i];summary[t]++;
-  return `<div class="personal-day"><span>${h(arabicDate(day.date))}<small>${day.date}</small></span><strong class="shift-pill ${t==='-'?'OFF':t}">${shiftLabels[t]}${t==='-'?'':`<small>${h(draft.times[t].start)}–${h(draft.times[t].end)}</small>`}</strong></div>`;
+ const shiftLabels={M:'Morning',E:'Evening',N:'Night','-':'Off',L:'Leave'};
+ const summary={M:0,E:0,N:0,'-':0,L:0};
+ const cards=current.dates.map(day=>{const t=displaySlot(day,i);summary[t]++;
+  return `<div class="personal-day"><span>${h(arabicDate(day.date))}<small>${day.date}</small></span><strong class="shift-pill ${t==='-'?'OFF':t==='L'?'LEAVE':isManual(day,i)?'MANUAL':t}">${shiftLabels[t]}${isShift(t)?`<small>${h(draft.times[t].start)}–${h(draft.times[t].end)}</small>`:''}</strong></div>`;
  }).join('');
- root.innerHTML=`<div class="personal-top"><b>${h(name)}</b><div>${summary.M} M · ${summary.E} E · ${summary.N} N · ${summary['-']} Off</div></div><div class="personal-grid">${cards}</div>`;
+ root.innerHTML=`<div class="personal-top"><b>${h(name)}</b><div>${summary.M} M · ${summary.E} E · ${summary.N} N · ${summary['-']} Off · ${summary.L} Leave</div></div><div class="personal-grid">${cards}</div>`;
 }
-function exportPersonal(){if(!current){toast('أنشئ الجدول أولًا');return}const i=Number($('selected-person').value),rows=[['Date','Day','Intern','Shift','Start','End']];const tm={M:[draft.times.M.start,draft.times.M.end],E:[draft.times.E.start,draft.times.E.end],N:[draft.times.N.start,draft.times.N.end],'-':['','']};for(const day of current.dates){const t=day.assignments[i];rows.push([day.date,arabicDate(day.date),draft.people[i].name,t==='-'?'Off':t,tm[t][0],tm[t][1]])};downloadFile(`ED_Intern_${i+1}_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
+function exportPersonal(){if(!current){toast('أنشئ الجدول أولًا');return}const i=Number($('selected-person').value),rows=[['Date','Day','Intern','Shift','Start','End']];const tm={M:[draft.times.M.start,draft.times.M.end],E:[draft.times.E.start,draft.times.E.end],N:[draft.times.N.start,draft.times.N.end],'-':['','']};for(const day of current.dates){const t=displaySlot(day,i);rows.push([day.date,arabicDate(day.date),draft.people[i].name,t==='-'?'Off':t==='L'?'Leave':(isManual(day,i)?t+' (Manual)':t),t==='L'?'':tm[t][0],t==='L'?'':tm[t][1]])};downloadFile(`ED_Intern_${i+1}_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
 function render(){renderRoster();renderReport();renderPersonal();}
 function downloadFile(filename,content,mime){const b=new Blob([content],{type:mime}),link=document.createElement('a'),url=URL.createObjectURL(b);link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 function csvText(rows){const esc=(s)=>'"'+String(s??'').replace(/"/g,'""')+'"';return '\ufeff'+rows.map(row=>row.map(esc).join(',')).join('\r\n')}
@@ -441,25 +547,25 @@ function exportMatrix(){
  if(!current){toast('أنشئ الجدول أولًا');return;}
  const dates=current.dates;
  const rows=[['Intern',...dates.map(d=>matrixDayLabel(d.date)+' '+d.date),'Total shifts'],...draft.people.map((p,i)=>{
-  const cells=dates.map(d=>d.assignments[i]==='-'?'Off':d.assignments[i]);
-  return [p.name,...cells,cells.filter(s=>s!=='Off').length];
- })];
+  const cells=dates.map(d=>{const t=displaySlot(d,i);return t==='-'?'Off':t==='L'?'L':(isManual(d,i)?t+' (Manual)':t)});
+  return [p.name,...cells,dates.filter(d=>isShift(d.assignments[i])).length];
+ }),...['M','E','N'].map(type=>[{M:'Morning',E:'Evening',N:'Night'}[type],...dates.map(d=>d.assignments.filter(t=>t===type).length),dates.reduce((sum,d)=>sum+d.assignments.filter(t=>t===type).length,0)])];
  downloadFile(`ED_Roster_Matrix_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8');
 }
 function exportDaily(){if(!current){toast('أنشئ الجدول أولًا');return}let rows=[['Date','Weekday','Shift','Start','End','Intern']];for(const day of current.dates)for(const typ of ['M','E','N'])day.assignments.forEach((x,i)=>{if(x===typ)rows.push([day.date,arabicDate(day.date),typ,draft.times[typ].start,draft.times[typ].end,draft.people[i].name])});downloadFile(`ED_Roster_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
-function exportReport(){if(!current){toast('أنشئ الجدول أولًا');return}recount();const rows=[['Intern','Morning','Evening','Night','Weekend','All shifts','Target shifts','Difference','Hours'],...current.counts.map(p=>[p.name,p.M,p.E,p.N,p.wknd,p.all,draft.targetShifts,p.all-draft.targetShifts,p.hours])];downloadFile(`ED_Statistics_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
-function exportBackup(){readSettings();downloadFile(`ED_Scheduler_Backup_${draft.start}.json`,JSON.stringify({cfg:draft,result:current,version:1},null,2),'application/json')}
-function restoreBackup(file){const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!data.cfg||!Array.isArray(data.cfg.people))throw Error('invalid');const defaultCfg=defaults().cfg;data.cfg.targetShifts??=16;data.cfg.times??=defaultCfg.times;for(const t of ['M','E','N'])data.cfg.times[t]??=defaultCfg.times[t];const error=G.validInput(data.cfg);if(error)throw Error(error);draft=data.cfg;current=data.result||null;if(current&&(!Array.isArray(current.dates)||current.dates.length!==draft.days||G.audit(draft,current).length))current=null;save();hydrate();toast('تم استيراد النسخة بنجاح')}catch(err){toast('نسخة غير صالحة: '+(err.message||''))}};reader.readAsText(file)}
+function exportReport(){if(!current){toast('أنشئ الجدول أولًا');return}recount();const rows=[['Intern','Morning','Evening','Night','Weekend','Leave','Manual','All shifts','Target shifts','Difference','Hours'],...current.counts.map((p,i)=>[p.name,p.M,p.E,p.N,p.wknd,current.dates.filter(d=>leaveDay(d.date,i)).length,current.dates.filter(d=>isManual(d,i)).length,p.all,draft.targetShifts,p.all-draft.targetShifts,p.hours])];downloadFile(`ED_Statistics_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
+function exportBackup(){readSettings();downloadFile(`ED_Scheduler_Backup_${draft.start}.json`,JSON.stringify({cfg:draft,result:current,workflow,version:2},null,2),'application/json')}
+function restoreBackup(file){const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!data.cfg||!Array.isArray(data.cfg.people))throw Error('invalid');const defaultCfg=defaults().cfg;data.cfg.targetShifts??=16;data.cfg.times??=defaultCfg.times;for(const t of ['M','E','N'])data.cfg.times[t]??=defaultCfg.times[t];const error=G.validInput(data.cfg);if(error)throw Error(error);draft=data.cfg;current=data.result||null;workflow={locked:!!data.workflow?.locked,publishedId:data.workflow?.publishedId||null,versions:Array.isArray(data.workflow?.versions)?data.workflow.versions:[]};if(current&&(!Array.isArray(current.dates)||current.dates.length!==draft.days||G.audit(draft,current).length))current=null;save();hydrate();toast('تم استيراد النسخة بنجاح')}catch(err){toast('نسخة غير صالحة: '+(err.message||''))}};reader.readAsText(file)}
 function init(){const initial=load();draft=initial.cfg;current=initial.result;if(current){try{if(!Array.isArray(current.dates)||current.dates.length!==draft.days||G.audit(draft,current).length)current=null}catch(_e){current=null}}hydrate();
  document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tab)));
  for(const id of ['start','days','targetShifts','maxConsec','covM','covE','covN','startM','endM','startE','endE','startN','endN'])$(id).addEventListener('change',()=>{readSettings();markDirty()});
  $('people-editor').addEventListener('input',(e)=>{const ip=e.target;if(ip.classList.contains('person-name')){draft.people[+ip.dataset.person].name=ip.value;markDirty()}else if(ip.classList.contains('off-dates')){draft.people[+ip.dataset.off].off=parseOff(ip.value);markDirty()}});
  $('people-editor').addEventListener('click',(e)=>{const del=e.target.closest('[data-remove]');if(!del)return;draft.people.splice(+del.dataset.remove,1);personEditor();markDirty()});
  $('add-person').addEventListener('click',addPerson);$('new-person').addEventListener('keydown',e=>{if(e.key==='Enter')addPerson()});
- $('generate').addEventListener('click',generate);$('reset-sample').addEventListener('click',()=>{if(!confirm('ترجع بيانات المثال وتحذف الجدول الحالي من الجهاز؟'))return;let d=defaults();draft=d.cfg;current=null;hydrate();save();toast('تمت استعادة المثال')});
+ $('lock-roster').addEventListener('click',lockRoster);$('unlock-roster').addEventListener('click',unlockRoster);$('publish-roster').addEventListener('click',publishRoster);$('publish-pdf').addEventListener('click',()=>{if(!current){toast('Generate a roster first.');return;}window.print()});$('version-history').addEventListener('click',versionAction);$('generate').addEventListener('click',generate);$('reset-sample').addEventListener('click',()=>{if(workflow.locked)return toast('Unlock first.');if(!confirm('ترجع بيانات المثال وتحذف الجدول الحالي من الجهاز؟'))return;let d=defaults();draft=d.cfg;current=null;workflow.publishedId=null;hydrate();save();toast('تمت استعادة المثال')});
  $('roster-content').addEventListener('change',(e)=>{if(!e.target.matches('select[data-day][data-grid-person]'))return;changeGridSlot(+e.target.dataset.day,+e.target.dataset.gridPerson,e.target.value)});
  $('person-filter').addEventListener('change',renderRoster);$('selected-person').addEventListener('change',renderPersonal);$('personal-csv').addEventListener('click',exportPersonal);
- $('grid-csv-export').addEventListener('click',exportMatrix);$('csv-export').addEventListener('click',exportDaily);$('summary-export').addEventListener('click',exportReport);$('print-export').addEventListener('click',()=>{if(!current){toast('أنشئ الجدول أولًا');return}window.print()});$('backup').addEventListener('click',exportBackup);$('restore').addEventListener('click',()=>$('restore-file').click());$('restore-file').addEventListener('change',e=>{if(e.target.files[0])restoreBackup(e.target.files[0]);e.target.value='' });
+ $('grid-csv-export').addEventListener('click',exportMatrix);$('csv-export').addEventListener('click',exportDaily);$('summary-export').addEventListener('click',exportReport);$('print-export').addEventListener('click',()=>{if(!current){toast('Generate a roster first.');return}window.print()});$('backup').addEventListener('click',exportBackup);$('restore').addEventListener('click',()=>$('restore-file').click());$('restore-file').addEventListener('change',e=>{if(e.target.files[0])restoreBackup(e.target.files[0]);e.target.value='' });
  if('serviceWorker' in navigator && location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
 init();
