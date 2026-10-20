@@ -35,7 +35,7 @@
 @media(max-width:420px){.shift-card{padding:10px}.shift-card-fields{gap:5px}.shift-card-fields input{padding:5px 2px;font-size:12px}.roster-row{grid-template-columns:105px 1fr}}
 
 
-/* v1.2 spreadsheet-style matrix: names pinned to left, day/date columns across the top. */
+/* v1.3 spreadsheet-style matrix: names pinned to left, day/date columns across the top. */
 .roster-legend{display:flex;flex-wrap:wrap;align-items:center;gap:9px 14px;margin:2px 0 12px;direction:rtl}
 .legend-item{display:inline-flex;align-items:center;gap:6px;color:var(--ink2);font-size:12px;font-weight:700}
 .legend-swatch{display:inline-grid;place-items:center;height:24px;min-width:26px;padding:0 5px;border-radius:7px;font-size:12px;font-weight:900}
@@ -50,12 +50,12 @@
 .roster-matrix thead th{position:sticky;top:0;background:#eaf2f7;color:#233b55;z-index:2;height:65px;font-size:11px;box-shadow:0 1px 0 #d3e0ed}
 .roster-matrix thead th.weekend-col{background:#fff4e5}
 .roster-matrix thead th.week-boundary,.roster-matrix tbody td.week-boundary{border-left:2px solid #a9bdce}
-.roster-matrix .matrix-name{position:sticky;left:0;width:167px;min-width:167px;max-width:167px;text-align:right;direction:rtl;font-weight:800;padding:7px 12px;background:#fff;z-index:3;white-space:normal;line-height:1.3;box-shadow:2px 0 6px #0b29410d;overflow-wrap:anywhere}
+.roster-matrix .matrix-name{position:sticky;left:0;width:167px;min-width:167px;max-width:167px;text-align:left;direction:auto;font-weight:800;padding:7px 12px;background:#fff;z-index:3;white-space:normal;line-height:1.3;box-shadow:2px 0 6px #0b29410d;overflow-wrap:anywhere}
 .roster-matrix thead .matrix-name{z-index:5;background:#d9eaf0;text-align:center}
 .roster-matrix tbody tr:nth-child(even) .matrix-name{background:#f7fafc}
 .roster-matrix td.matrix-total{font-weight:800;background:#f4f9fa;color:#21655c}
 .roster-matrix thead th.matrix-total{background:#dceee8}
-.roster-matrix .matrix-day{display:block;font-weight:800;direction:rtl;font-size:11px;white-space:nowrap}
+.roster-matrix .matrix-day{display:block;font-weight:800;direction:ltr;font-size:11px;white-space:nowrap}
 .roster-matrix .matrix-date{display:block;color:#6f8191;direction:ltr;font-size:10px;font-weight:600}
 .roster-matrix .weekend-col .matrix-date{color:#a47636}
 .matrix-shift{appearance:none;-webkit-appearance:none;display:block;margin:0 auto;cursor:pointer;border-radius:9px;min-width:54px;width:56px;max-width:60px;height:35px;text-align:center;text-align-last:center;font-size:14px;line-height:1;font-weight:900;padding:0 9px 0 3px;background-image:none}
@@ -87,7 +87,7 @@
  <header class="main-header no-print">
   <div class="brand-icon" aria-hidden="true">✚</div>
   <div><p class="eyebrow">ED · INTERN MANAGEMENT</p><h1>Intern Scheduler</h1><p class="heading-sub">مولّد مناوبات الطوارئ الذكي</p></div>
-  <div class="header-chip">نسخة 1.2</div>
+  <div class="header-chip">نسخة 1.3</div>
  </header>
  <section class="intro no-print">
   <span class="glow"></span>
@@ -132,7 +132,7 @@
     </section>
    </div>
    <section class="panel policy-box">
-    <div><h3>قواعد التوليد</h3><p>يفحص التغطية اليومية، الإجازات، حد الأيام المتتالية، و11 ساعة راحة فعلية بين الشفتات وفق الأوقات التي تختارها. يقارن الجدول أيضًا بهدف عدد الشفتات لكل متدرب. اختلاف إجمالي التغطية عن الهدف يظهر بوضوح في الإحصائيات ولا يُخفى.</p></div>
+    <div><h3>قواعد التوليد</h3><p>يفحص التغطية اليومية، الإجازات، حد الأيام المتتالية، و11 ساعة راحة فعلية بين الشفتات وفق الأوقات التي تختارها. التوليد التلقائي لا يتجاوز عدد الشفتات الذي حددته لأي متدرب. إذا لم تكفِ الساعات لتغطية كل الشفتات، يظهر النقص بوضوح. يمكنك إضافة شفتات يدويًا من الجدول بعد التأكيد، مع استمرار فحص الإجازات والراحة.</p></div>
     <div class="info-symbol">✓</div>
    </section>
    <section class="action-bar">
@@ -143,7 +143,7 @@
   </section>
   <section id="view-roster" class="view">
    <div id="print-header" class="print-header"></div>
-   <div class="section-heading no-print"><div><p class="eyebrow">MONTHLY ROSTER</p><h2>جدول المناوبات</h2><p id="roster-meta" class="muted">أنشئ جدولك أولًا من صفحة الإعدادات.</p></div><div class="export-actions"><select class="filter-select" id="person-filter" aria-label="عرض جدول انتيرن"><option value="all">كل الانتيرنز</option></select><button class="btn light" id="grid-csv-export" type="button">↓ Excel CSV</button><button class="btn light" id="csv-export" type="button">↓ تفاصيل CSV</button><button class="btn light" id="print-export" type="button">⎙ PDF / Print</button></div></div>
+   <div class="section-heading no-print"><div><p class="eyebrow">MONTHLY ROSTER</p><h2>ED Shift Roster</h2><p id="roster-meta" class="muted">Generate a roster from Settings to begin.</p></div><div class="export-actions"><select class="filter-select" id="person-filter" aria-label="Filter by intern"><option value="all">All interns</option></select><button class="btn light" id="grid-csv-export" type="button">↓ Excel CSV</button><button class="btn light" id="csv-export" type="button">↓ Detailed CSV</button><button class="btn light" id="print-export" type="button">⎙ PDF / Print</button></div></div>
    <div id="roster-alerts"></div>
    <div id="roster-content"></div>
   </section>
@@ -157,7 +157,7 @@
    <div id="report-content"></div>
   </section>
  </main>
- <footer class="footer no-print"><p>ED Intern Scheduler · v1.2 <span>·</span> يعمل محليًا في المتصفح. البيانات لا تُرسل إلى خادم.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
+ <footer class="footer no-print"><p>ED Intern Scheduler · v1.3 <span>·</span> يعمل محليًا في المتصفح. البيانات لا تُرسل إلى خادم.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -192,16 +192,8 @@ function validInput(cfg){
  if(!Number.isInteger(cfg.maxConsec)||cfg.maxConsec<1||cfg.maxConsec>14)return 'أقصى أيام متتالية يجب أن يكون من 1 إلى 14.';
  if(!Number.isInteger(cfg.targetShifts)||cfg.targetShifts<1)return 'أدخل عدد الشفتات المطلوب لكل انتيرن (واحد أو أكثر).';
  for(const type of ['M','E','N']){const t=shiftTimes(cfg,type);if(!t||!Number.isFinite(timeMinutes(t.start))||!Number.isFinite(timeMinutes(t.end)))return `حدد بداية ونهاية ${type}.`;if(duration(t)!==480)return `وقت ${type} يجب أن يكون 8 ساعات بالضبط (المدخل ${t.start} إلى ${t.end}).`;}
- if(cfg.targetShifts>cfg.days)return `عدد الشفتات المطلوبة للشخص (${cfg.targetShifts}) أكبر من عدد أيام الجدول (${cfg.days}).`;
+ // A target larger than the date range is a valid upper limit; each person still works at most once per day.
 
- const maxPossible=n*(cfg.maxConsec/(cfg.maxConsec+1));
- if(slots>Math.ceil(maxPossible+0.001))return 'التغطية المطلوبة قد لا تسمح بأيام الراحة المحددة. قلل التغطية أو زِد الانتيرنز.';
- for(let d=0;d<cfg.days;d++){
-  const date=addDays(cfg.start,d), next=addDays(date,1);
-  const available=cfg.people.filter(p=>['M','E','N'].some(t=>c[t]>0&&!leaveConflict(cfg,cfg.people.indexOf(p),t,date)));
-  if(available.length<slots)return `تغطية غير ممكنة يوم ${date}: عدد المتاحين ${available.length} فقط، والمطلوب ${slots}.`;
-  for(const t of ['M','E','N']){if(c[t]>0&&cfg.people.filter((p,i)=>!leaveConflict(cfg,i,t,date)).length<c[t])return `لا يوجد عدد كافٍ لمناوبة ${t} في ${date} مع مراعاة الإجازات.`;}
- }
  return '';
 }
 function emptyCounts(n){return Array.from({length:n},()=>({all:0,M:0,E:0,N:0,wknd:0,consec:0,prev:'-',off:0}));}
@@ -227,14 +219,14 @@ function pickWeighted(cands,score,stochastic){
 function seeded(seed){let x=seed|0;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296}}
 function getChoices(state,cfg,day,rng){
  const date=addDays(cfg.start,day),n=cfg.people.length;
- const remaining=Array.from({length:n},(_,i)=>i).filter(i=>state.counts[i].consec<cfg.maxConsec && (!targetFeasible(cfg)||state.counts[i].all<cfg.targetShifts));
+ const remaining=Array.from({length:n},(_,i)=>i).filter(i=>state.counts[i].consec<cfg.maxConsec && state.counts[i].all<cfg.targetShifts);
  const assignments=Array(n).fill('-'),chosen=new Set(),out=[];
  // Morning first, because it has the strictest previous-shift constraints.
- const types=['M','E','N'];
+ const types=[['M','E','N'],['E','N','M'],['N','M','E']][day%3];
  for(const type of types){
   for(let k=0;k<cfg.coverage[type];k++){
    const candidates=remaining.filter(i=>!chosen.has(i) && !leaveConflict(cfg,i,type,date) && enoughRest(cfg,state.counts[i].prev,type));
-   if(!candidates.length)return null;
+   if(!candidates.length)continue;
    const target=(day+1)*cfg.coverage[type]/n;
    const person=pickWeighted(candidates,(i)=>{
     const z=state.counts[i];
@@ -257,7 +249,7 @@ function apply(state,assignments,cfg,day){
   if(type==='-'){q.consec=0;q.prev='-';q.off++;}
   else {q.consec++;q.prev=type;q.all++;q[type]++;if(weekend(addDays(cfg.start,day)))q.wknd++;}
  }
- const newState={counts,rows:state.rows.concat([assignments]),weekends:state.weekends+(weekend(addDays(cfg.start,day))?1:0)};
+ const newState={counts,rows:state.rows.concat([assignments]),unfilled:(state.unfilled||0)+Object.values(cfg.coverage).reduce((a,b)=>a+b,0)-assignments.filter(t=>t!=='-').length,weekends:state.weekends+(weekend(addDays(cfg.start,day))?1:0)};
  return newState;
 }
 function scoreEnd(st,cfg){
@@ -286,17 +278,17 @@ function generate(cfg,options={}){
      let penalty=weightState(fresh,day,cfg);
      const nextDay=addDays(cfg.start,day+1);
      const slots=cfg.coverage.M+cfg.coverage.E+cfg.coverage.N;
-     if(day<cfg.days-1){
+     if(day<cfg.days-1 && cfg.people.length*cfg.targetShifts >= (cfg.coverage.M+cfg.coverage.E+cfg.coverage.N)*cfg.days){
       const used=[];
-      const possible=fresh.counts.filter((v,i)=>v.consec<cfg.maxConsec && (!targetFeasible(cfg)||v.all<cfg.targetShifts) && ['M','E','N'].some(t=>cfg.coverage[t]>0&&!leaveConflict(cfg,i,t,nextDay)&&enoughRest(cfg,v.prev,t))).length;
+      const possible=fresh.counts.filter((v,i)=>v.consec<cfg.maxConsec && v.all<cfg.targetShifts && ['M','E','N'].some(t=>cfg.coverage[t]>0&&!leaveConflict(cfg,i,t,nextDay)&&enoughRest(cfg,v.prev,t))).length;
       if(possible<slots)continue;
       for(const t of ['M','E','N']){
-       const can=fresh.counts.filter((v,i)=>v.consec<cfg.maxConsec && (!targetFeasible(cfg)||v.all<cfg.targetShifts) && !leaveConflict(cfg,i,t,nextDay)&&enoughRest(cfg,v.prev,t)).length;
+       const can=fresh.counts.filter((v,i)=>v.consec<cfg.maxConsec && v.all<cfg.targetShifts && !leaveConflict(cfg,i,t,nextDay)&&enoughRest(cfg,v.prev,t)).length;
        if(can<cfg.coverage[t]){used.push(t)}
       }
       if(used.length)continue;
      }
-     fresh.rank=penalty+(rng()-0.5)*5;
+     fresh.rank=penalty+fresh.unfilled*250+(rng()-0.5)*5;
      next.push(fresh);
     }
    }
@@ -305,15 +297,19 @@ function generate(cfg,options={}){
    furthest=Math.max(furthest,day+1);
    if(!beam.length)break;
   }
-  for(const st of beam){if(st.rows.length===cfg.days && (!targetFeasible(cfg)||st.counts.every(z=>z.all===cfg.targetShifts))){const finalScore=scoreEnd(st,cfg);if(!best||finalScore<best.finalScore)best={...st,finalScore};}}
+  for(const st of beam){if(st.rows.length===cfg.days){const finalScore=scoreEnd(st,cfg)+(st.unfilled||0)*300;if(!best||finalScore<best.finalScore)best={...st,finalScore};}}
   if(best&&best.finalScore<3)break;
  }
  if(!best)return {ok:false,error:`لم أجد جدولًا يستوفي جميع الشروط (وصل المحرك إلى اليوم ${furthest}). جرّب تعديل عدد الأيام أو تغطية الشفتات أو الإجازات. إذا كانت الأهداف متوافقة حسابيًا، قد يحتاج المحرك لتعديل القيود. لا تعتمد جدولًا ناقصًا.`};
  const dates=best.rows.map((a,i)=>({date:addDays(cfg.start,i),assignments:a}));
  const warnings=[];
  const load=cfg.coverage.M+cfg.coverage.E+cfg.coverage.N;
- const avg=load*cfg.days/cfg.people.length*8/(cfg.days/7);
- if(cfg.targetShifts>0&&!targetFeasible(cfg)){const required=cfg.people.length*cfg.targetShifts,planned=load*cfg.days;warnings.unshift(`الهدف ${cfg.targetShifts} شفت لكل انتيرن يحتاج ${required} شفتًا، لكن تغطية الفترة المحددة تحتاج ${planned} شفتًا. لن يطابق الجميع الهدف: عدّل الأيام أو التغطية، أو راجع توزيع الشفتات.`);}
+ const filled=best.counts.reduce((sum,p)=>sum+p.all,0);
+ const avg=filled/cfg.people.length*8/(cfg.days/7);
+ const required=cfg.people.length*cfg.targetShifts,planned=load*cfg.days;
+ if(planned>required)warnings.push(`Required coverage is ${planned} shifts, but the automatic limit permits only ${required}. Unfilled shifts remain; no intern exceeds ${cfg.targetShifts} automatically.`);
+ if(filled<planned)warnings.push(`${planned-filled} shift slots are unfilled. Review them before approving the roster.`);
+ if(filled<Math.min(required,planned))warnings.push(`Other rest or leave limits prevented filling ${Math.min(required,planned)-filled} additional slots.`);
 
  warnings.push(`المتوسط التقريبي ${avg.toFixed(1)} ساعة/أسبوع لكل شخص. تأكد من مطابقته لمتطلبات التدريب في المستشفى والجامعة.`);
  if(avg>48)warnings.push(`متوسط الساعات الأسبوعية في هذا المثال ${avg.toFixed(1)} ساعة. راجع الساعات والحدود المعتمدة رسميًا.`);
@@ -323,7 +319,7 @@ function generate(cfg,options={}){
 function audit(cfg,result){if(!result.ok)return result.error;let errors=[];
  const p=cfg.people.length,streak=Array(p).fill(0),previous=Array(p).fill('-');
  result.dates.forEach((r,idx)=>{
-  for(const t of ['M','E','N'])if(r.assignments.filter(v=>v===t).length!==cfg.coverage[t])errors.push(`${r.date}: التغطية غير مطابقة ${t}`);
+  // Coverage shortfalls or extra manual assignments are reported separately.
   r.assignments.forEach((t,i)=>{
    if(t!=='-'&&cfg.people[i].off.includes(r.date))errors.push(`${r.date}: إجازة ${i}`);
    if(t!=='-'&&leaveConflict(cfg,i,t,r.date))errors.push(`${r.date}: الشفت يتعارض مع إجازة ${i}`);
@@ -333,10 +329,6 @@ function audit(cfg,result){if(!result.ok)return result.error;let errors=[];
    previous[i]=t;
   });
  });
- if(cfg.targetShifts>0&&targetFeasible(cfg)){
-  const totals=Array(p).fill(0);result.dates.forEach(day=>day.assignments.forEach((t,i)=>{if(t!=='-')totals[i]++}));
-  totals.forEach((v,i)=>{if(v!==cfg.targetShifts)errors.push(`عدد شفتات ${cfg.people[i].name}: ${v} بدل ${cfg.targetShifts}`)});
- }
  return errors;
 }
 const api={generate,addDays,weekend,audit,validInput,targetFeasible,shiftTimes,crossesMidnight};
@@ -359,51 +351,55 @@ function switchTab(id){document.querySelectorAll('.tab').forEach(b=>b.classList.
 function personEditor(){const content=$('people-editor');content.innerHTML=`<div class="mini-heading"><span>#</span><span>الاسم</span><span>أيام مستثناة</span><span></span></div>`+draft.people.map((p,i)=>`<div class="person-row" data-index="${i}"><span class="person-index">${i+1}</span><input aria-label="اسم الانتيرن ${i+1}" class="person-name" data-person="${i}" value="${h(p.name)}"><input aria-label="إجازات الانتيرن ${i+1}" class="off-dates" placeholder="2026-11-12, ..." data-off="${i}" value="${h(p.off.join(', '))}"><button type="button" class="remove-person" data-remove="${i}" aria-label="حذف الانتيرن">×</button></div>`).join('');$('people-count').textContent=`${draft.people.length} أشخاص`;}
 function hydrate(){ $('start').value=draft.start;$('days').value=String(draft.days);$('targetShifts').value=String(draft.targetShifts);$('maxConsec').value=String(draft.maxConsec);for(const sh of ['M','E','N']){$('cov'+sh).value=String(draft.coverage[sh]);$('start'+sh).value=draft.times[sh].start;$('end'+sh).value=draft.times[sh].end;}personEditor();render();renderTargetPreview(); }
 function readSettings(){draft.start=$('start').value;draft.days=Number($('days').value);draft.targetShifts=Number($('targetShifts').value);draft.maxConsec=Number($('maxConsec').value);for(const sh of ['M','E','N']){draft.coverage[sh]=Number($('cov'+sh).value);draft.times[sh]={start:$('start'+sh).value,end:$('end'+sh).value};}}
-function renderTargetPreview(){const el=$('target-preview'),total=(draft.coverage.M+draft.coverage.E+draft.coverage.N)*draft.days,wanted=draft.people.length*draft.targetShifts;el.classList.toggle('mismatch',wanted!==total);el.textContent=`التغطية: ${total} شفت | المطلوب: ${wanted} شفت (${draft.people.length} × ${draft.targetShifts}). `+(total===wanted?'✅ الهدف متوافق حسابيًا.':'⚠️ هناك فرق '+Math.abs(total-wanted)+' شفت، وسيظهر في الإحصائيات.');}
+function renderTargetPreview(){const el=$('target-preview'),total=(draft.coverage.M+draft.coverage.E+draft.coverage.N)*draft.days,wanted=draft.people.length*draft.targetShifts;el.classList.toggle('mismatch',wanted!==total);el.textContent=`AUTO LIMIT: ${draft.targetShifts} shifts/intern (8 hours each) · Capacity ${wanted} / Required ${total}. `+(total>wanted?`⚠️ At least ${total-wanted} shifts cannot be assigned automatically. Add manually if needed.`:total===wanted?'✓ Capacity matches demand.':'✓ Auto-generation will not exceed the selected target.');}
 
 function parseOff(str){return [...new Set(str.split(/[\s,،;]+/g).map(x=>x.trim()).filter(Boolean))].sort()}
 function markDirty(){current=null;$('generation-status').textContent='تم تعديل الإعدادات. ولّد جدولًا جديدًا.';save();render();renderTargetPreview();}
 function addPerson(){const input=$('new-person'),name=input.value.trim();if(!name){toast('أدخل اسم الانتيرن أولًا');return}if(draft.people.length>=40){toast('الحد الحالي 40 انتيرن');return}if(draft.people.some(p=>p.name.toLowerCase()===name.toLowerCase())){toast('الاسم موجود مسبقًا');return}draft.people.push({name,off:[]});input.value='';personEditor();markDirty()}
 function generate(){readSettings();const error=G.validInput(draft);if(error){$('generation-status').textContent='⚠️ '+error;toast(error);return}const btn=$('generate');btn.disabled=true;btn.textContent='⏳ يجري توزيع المناوبات...';$('generation-status').textContent='جاري حساب التغطية والإحصائيات.';
  setTimeout(()=>{
-  try{let res=G.generate(draft,{seed:Date.now()%2147483647});if(!res.ok){toast(res.error);$('generation-status').textContent='⚠️ '+res.error;return}const errs=G.audit(draft,res);if(errs.length){toast('تم إيقاف الجدول بسبب تعارض في الفحص.');$('generation-status').textContent='تعارض: '+errs.slice(0,2).join(', ');return}current=res;save();$('generation-status').textContent=`✅ اكتمل ${res.dates.length} يوم دون تعارضات مكتشفة.`;render();switchTab('roster')}catch(e){$('generation-status').textContent='خطأ غير متوقع: '+e.message;toast('لم ينجح التوليد');}finally{btn.disabled=false;btn.textContent='⚡ توليد الجدول تلقائيًا'}
+  try{let res=G.generate(draft,{seed:Date.now()%2147483647});if(!res.ok){toast(res.error);$('generation-status').textContent='⚠️ '+res.error;return}const errs=G.audit(draft,res);if(errs.length){toast('تم إيقاف الجدول بسبب تعارض في الفحص.');$('generation-status').textContent='تعارض: '+errs.slice(0,2).join(', ');return}current=res;save();const planned=draft.days*(draft.coverage.M+draft.coverage.E+draft.coverage.N),filled=res.counts.reduce((a,x)=>a+x.all,0);$('generation-status').textContent=filled<planned?`⚠️ Generated ${res.dates.length} days with ${planned-filled} unfilled shifts. Auto cap: ${draft.targetShifts}/intern.`:`✅ Generated ${res.dates.length} days with full coverage and no safety conflicts.`;render();switchTab('roster')}catch(e){$('generation-status').textContent='خطأ غير متوقع: '+e.message;toast('لم ينجح التوليد');}finally{btn.disabled=false;btn.textContent='⚡ توليد الجدول تلقائيًا'}
  },30);
 }
-function arabicDate(iso){return new Date(iso+'T12:00:00Z').toLocaleDateString('ar-SA-u-ca-gregory',{day:'numeric',month:'short',weekday:'long',timeZone:'UTC'})}
+function arabicDate(iso){return new Date(iso+'T12:00:00Z').toLocaleDateString('en-US',{day:'2-digit',month:'short',weekday:'short',timeZone:'UTC'})}
 function groupedDates(dates){let result=[];for(let i=0;i<dates.length;i+=7)result.push(dates.slice(i,i+7));return result}
 function recount(){if(!current)return;const counts=draft.people.map((p,i)=>({name:p.name,all:0,M:0,E:0,N:0,wknd:0,hours:0}));current.dates.forEach(day=>day.assignments.forEach((s,i)=>{if(s!=='-'){const c=counts[i];c.all++;c[s]++;c.hours+=8;if(G.weekend(day.date))c.wknd++}}));current.counts=counts;}
-function matrixDayLabel(date){return new Date(date+'T12:00:00Z').toLocaleDateString('ar-SA-u-ca-gregory',{weekday:'short',timeZone:'UTC'});}
+function matrixDayLabel(date){return new Date(date+'T12:00:00Z').toLocaleDateString('en-US',{weekday:'short',timeZone:'UTC'});}
 function matrixDateLabel(date){return date.slice(8,10)+'/'+date.slice(5,7);}
 function renderRoster(){
  const target=$('roster-content'),meta=$('roster-meta'),alert=$('roster-alerts');
  if(!current){
-  $('print-header').textContent='';meta.textContent='أنشئ جدولك أولًا من صفحة الإعدادات.';alert.innerHTML='';
-  target.innerHTML='<div class="empty"><div style="font-size:36px">🗓️</div><b>لا يوجد جدول بعد</b>اضغط «توليد الجدول تلقائيًا» في الإعدادات للبدء.</div>';return;
+  $('print-header').textContent='';meta.textContent='Generate a roster from Settings.';alert.innerHTML='';
+  target.innerHTML='<div class="empty"><div style="font-size:36px">🗓️</div><b>No roster yet</b>Use Generate in Settings to begin.</div>';return;
  }
  const savedScroll=target.querySelector('.roster-matrix-scroll');
  const oldLeft=savedScroll?savedScroll.scrollLeft:0,oldTop=savedScroll?savedScroll.scrollTop:0;
- $('print-header').textContent='جدول الطوارئ مقدم من د صالح اليامي';
+ $('print-header').textContent='Emergency Department Roster · Dr Saleh Alyami';
  const dates=current.dates,filter=$('person-filter'),previousFilter=filter.value||'all';
- filter.innerHTML='<option value="all">كل الانتيرنز</option>'+draft.people.map((p,i)=>`<option value="${i}">${h(p.name)}</option>`).join('');
+ filter.innerHTML='<option value="all">All interns</option>'+draft.people.map((p,i)=>`<option value="${i}">${h(p.name)}</option>`).join('');
  filter.value=(previousFilter==='all'||(Number.isInteger(+previousFilter)&&+previousFilter<draft.people.length))?previousFilter:'all';
  if(filter.value==='')filter.value='all';
- meta.textContent=`${draft.start} · ${dates.length} يومًا · ${draft.people.length} انتيرنز`;
+ meta.textContent=`${draft.start} · ${dates.length} days · ${draft.people.length} interns · Auto cap: ${draft.targetShifts} shifts/intern`;
  const errs=G.audit(draft,current);
- alert.innerHTML=(errs.length?`<div class="alert">⚠️ تعارضات: ${h(errs.slice(0,4).join(' / '))}</div>`:'<div class="success-note">✓ التغطية اليومية وقواعد الإجازات والراحة: دون مخالفات مكتشفة.</div>')+(current.warnings||[]).map(w=>`<div class="alert">⚠️ ${h(w)}</div>`).join('');
+ let missing=0,extra=0,affectedDays=0;
+ for(const day of dates){let different=false;for(const t of ['M','E','N']){const found=day.assignments.filter(x=>x===t).length,expected=draft.coverage[t];missing+=Math.max(0,expected-found);extra+=Math.max(0,found-expected);if(found!==expected)different=true;}if(different)affectedDays++;}
+ const overLimit=draft.people.map((p,i)=>({name:p.name,count:dates.filter(d=>d.assignments[i]!=='-').length})).filter(p=>p.count>draft.targetShifts);
+ alert.innerHTML=(errs.length?`<div class="alert">⚠️ Safety conflicts: ${h(errs.slice(0,4).join(' / '))}</div>`:'<div class="success-note">✓ Rest and leave checks passed.</div>')+(missing?`<div class="alert">⚠️ UNFILLED SHIFTS: ${missing} (${affectedDays} affected days). Review coverage before approval.</div>`:'')+(extra?`<div class="alert">⚠️ EXTRA DAILY COVERAGE: ${extra} manually added shifts.</div>`:'')+(overLimit.length?`<div class="alert">⚠️ OVER TARGET (existing or manual changes): ${h(overLimit.map(p=>p.name+' '+p.count+'/'+draft.targetShifts).join(', '))}</div>`:'');
+
  const peopleIds=draft.people.map((_,i)=>i).filter(i=>filter.value==='all'||i===Number(filter.value));
- const legend=['M','E','N','OFF'].map((t,i)=>`<span class="legend-item"><span class="legend-swatch ${t}">${t==='OFF'?'–':t}</span> ${['Morning','Evening','Night','راحة'][i]}</span>`).join('');
+ const legend=['M','E','N','OFF'].map((t,i)=>`<span class="legend-item"><span class="legend-swatch ${t}">${t==='OFF'?'–':t}</span> ${['Morning','Evening','Night','Off'][i]}</span>`).join('');
  const header=dates.map((d,j)=>`<th scope="col" class="${G.weekend(d.date)?'weekend-col':''} ${j>0&&j%7===0?'week-boundary':''}" title="${h(d.date)}"><span class="matrix-day">${h(matrixDayLabel(d.date))}</span><span class="matrix-date">${h(matrixDateLabel(d.date))}</span></th>`).join('');
  const rows=peopleIds.map(i=>{
   const cells=dates.map((d,j)=>{
    const typ=d.assignments[i],color=typ==='-'?'OFF':typ;
    const opts=[['-','–'],['M','M'],['E','E'],['N','N']].map(([v,label])=>`<option value="${v}" ${v===typ?'selected':''}>${label}</option>`).join('');
-   return `<td class="${typ==='-'?'date-off':''} ${j>0&&j%7===0?'week-boundary':''}"><select class="matrix-shift ${color}" data-day="${j}" data-grid-person="${i}" aria-label="${h(draft.people[i].name)}، ${h(d.date)}: ${typ==='-'?'راحة':typ}" title="اضغط لتبديل الشفت مع متدرب آخر في اليوم نفسه">${opts}</select></td>`;
+   return `<td class="${typ==='-'?'date-off':''} ${j>0&&j%7===0?'week-boundary':''}"><select class="matrix-shift ${color}" data-day="${j}" data-grid-person="${i}" aria-label="${h(draft.people[i].name)}، ${h(d.date)}: ${typ==='-'?'Off':typ}" title="Choose an assigned shift (manual edits may exceed your cap)">${opts}</select></td>`;
   }).join('');
   const total=dates.reduce((acc,d)=>acc+(d.assignments[i]!=='-'?1:0),0);
   return `<tr><th scope="row" class="matrix-name">${h(draft.people[i].name)}</th>${cells}<td class="matrix-total">${total}</td></tr>`;
  }).join('');
  const footer=dates.map((d,j)=>`<td class="${j>0&&j%7===0?'week-boundary':''}">${d.assignments.filter(v=>v!=='-').length}</td>`).join('');
- target.innerHTML=`<div class="roster-legend" aria-label="دليل ألوان المناوبات">${legend}</div><p class="matrix-help">اسحب الجدول يمينًا ويسارًا لمشاهدة جميع الأيام. أسماء الانتيرنز ثابتة على اليسار. لتعديل خلية اختر الشفت، وسيحاول التطبيق تبديله مع متدرب آخر من نفس اليوم دون خرق التغطية أو الراحة.</p><div class="roster-matrix-scroll" tabindex="0" role="region" aria-label="جدول مناوبات الانتيرنز، قابل للتمرير أفقيًا"><table class="roster-matrix" aria-label="جدول الطوارئ الشهري"><thead><tr><th scope="col" class="matrix-name">اسم الانتيرن</th>${header}<th scope="col" class="matrix-total">المجموع</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td class="matrix-name matrix-key">التغطية</td>${footer}<td class="matrix-total">${dates.reduce((a,d)=>a+d.assignments.filter(v=>v!=='-').length,0)}</td></tr></tfoot></table></div><p class="matrix-grid-footnote">الألوان: M أصفر فاتح، E أخضر فاتح، N أزرق فاتح. الرمز (–) يعني يوم راحة. يمكن طباعة الجدول أو تنزيله بصيغة Excel CSV بنفس ترتيب الأسماء والأيام.</p>`;
+ target.innerHTML=`<div class="roster-legend" aria-label="Shift color legend">${legend}</div><p class="matrix-help">Swipe sideways to see all days. Intern names stay fixed on the left. Tap any cell to change M / E / N / Off manually. Manual edits can exceed the target only after confirmation; rest and leave rules still apply.</p><div class="roster-matrix-scroll" tabindex="0" role="region" aria-label="Scrollable intern shift roster"><table class="roster-matrix" aria-label="Emergency department shift roster"><thead><tr><th scope="col" class="matrix-name">Intern</th>${header}<th scope="col" class="matrix-total">Total</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td class="matrix-name matrix-key">Coverage</td>${footer}<td class="matrix-total">${dates.reduce((a,d)=>a+d.assignments.filter(v=>v!=='-').length,0)}</td></tr></tfoot></table></div><p class="matrix-grid-footnote">Colors: M light yellow, E light green, N light blue; – means Off. Export as Excel CSV or print to PDF.</p>`;
  const newScroll=target.querySelector('.roster-matrix-scroll');
  if(newScroll){newScroll.scrollLeft=oldLeft;newScroll.scrollTop=oldTop;}
 }
@@ -411,17 +407,15 @@ function changeGridSlot(dayIndex,personIndex,newShift){
  if(!current||!['M','E','N','-'].includes(newShift))return;
  const arr=current.dates[dayIndex]?.assignments;
  if(!arr||personIndex<0||personIndex>=arr.length)return;
- const currentShift=arr[personIndex];if(currentShift===newShift)return;
- const swapCandidates=arr.map((s,i)=>s===newShift&&i!==personIndex?i:-1).filter(i=>i!==-1);
- for(const partner of swapCandidates){
-  const original=arr.slice();arr[personIndex]=newShift;arr[partner]=currentShift;
-  if(G.audit(draft,current).length===0){
-   recount();save();render();toast('تم تبديل '+draft.people[personIndex].name+' مع '+draft.people[partner].name+' مع الحفاظ على التغطية والراحة.');return;
-  }
-  current.dates[dayIndex].assignments=original;
+ const previous=arr[personIndex];if(previous===newShift)return;
+ const count=current.dates.reduce((n,d)=>n+(d.assignments[personIndex]!=='-'?1:0),0);
+ if(previous==='-'&&newShift!=='-'&&count>=draft.targetShifts){
+  if(!confirm(`${draft.people[personIndex].name} has ${count}/${draft.targetShifts} shifts. Add another shift MANUALLY beyond the selected limit?`)){render();return;}
  }
- render();
- toast(!swapCandidates.length?'لا يوجد متدرب بمناوبة '+(newShift==='-'?'راحة':newShift)+' في نفس اليوم للتبديل.':'لا يوجد تبديل مسموح لهذه الخلية دون مخالفة شروط الراحة والتغطية أو عدد الشفتات.');
+ arr[personIndex]=newShift;
+ const conflicts=G.audit(draft,current);
+ if(conflicts.length){arr[personIndex]=previous;render();toast('Edit rejected: '+conflicts.slice(0,2).join(' | '));return;}
+ recount();save();render();toast('Manual change saved. Check coverage and targets.');
 }
 
 function renderReport(){const root=$('report-content');if(!current){root.innerHTML='<div class="empty">أنشئ الجدول لعرض ملخص المناوبات.</div>';return}recount();const c=current.counts;const total=c.reduce((a,x)=>a+x.all,0),hours=c.reduce((a,x)=>a+x.hours,0),v=(key)=>{const n=c.map(i=>i[key]);return `${Math.min(...n)}–${Math.max(...n)}`};const errs=G.audit(draft,current);
@@ -446,7 +440,7 @@ function csvText(rows){const esc=(s)=>'"'+String(s??'').replace(/"/g,'""')+'"';r
 function exportMatrix(){
  if(!current){toast('أنشئ الجدول أولًا');return;}
  const dates=current.dates;
- const rows=[['Intern',...dates.map(d=>d.date),'Total shifts'],...draft.people.map((p,i)=>{
+ const rows=[['Intern',...dates.map(d=>matrixDayLabel(d.date)+' '+d.date),'Total shifts'],...draft.people.map((p,i)=>{
   const cells=dates.map(d=>d.assignments[i]==='-'?'Off':d.assignments[i]);
   return [p.name,...cells,cells.filter(s=>s!=='Off').length];
  })];
