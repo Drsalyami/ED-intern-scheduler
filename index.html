@@ -66,7 +66,7 @@
 .matrix-grid-footnote{color:var(--muted);font-size:12px;line-height:1.7;margin-top:11px}
 @media(max-width:520px){.roster-matrix .matrix-name{width:130px;min-width:130px;max-width:130px;font-size:12px;padding:6px 9px}.roster-matrix th,.roster-matrix td{width:67px;min-width:67px}.matrix-shift{min-width:50px;width:53px}.roster-matrix-scroll{max-height:67vh}.roster-matrix thead th{height:59px}}
 @media print{
- @page{size:A3 landscape;margin:9mm 9mm 15mm}
+ @page{size:A3 landscape;margin:0}
  .roster-legend,.matrix-help,.matrix-grid-footnote{display:none!important}
  .roster-matrix-scroll{overflow:visible!important;max-height:none!important;border:0;box-shadow:none}
  .roster-matrix{width:100%!important;min-width:0!important;table-layout:fixed}
@@ -110,15 +110,33 @@
 .details-table th,.details-table td{border:1px solid var(--line);padding:9px 11px;text-align:left;background:#fff;word-break:break-word}.details-table th{background:#eef4f7}
 .roster-matrix .matrix-phone{width:145px;min-width:145px;max-width:145px;font-size:11px;overflow-wrap:anywhere;background:#f9fbfd}
 .roster-matrix thead .matrix-phone{background:#dfe9f1;font-weight:800;font-size:10px}
-.pdf-attribution{display:none}
+.pdf-attribution{display:none}.personal-print-heading{display:none}
 @media print{
  .roster-details{display:block!important;break-inside:avoid;margin-top:9mm;padding:5mm;border:1px solid #c8d3dc;box-shadow:none}
  .roster-details .details-table th,.roster-details .details-table td{font-size:10px;padding:4px 7px}
  .roster-matrix .matrix-phone{min-width:50px!important;max-width:75px!important;width:75px!important;font-size:7px!important}
- .pdf-attribution{display:block!important;position:fixed;bottom:2mm;left:0;right:0;text-align:center;font-size:9px;color:#657183}
+ /* Reserve content margins in CSS rather than the browser page header/footer area. */
+ .shell{padding:9mm 9mm 17mm!important}
+ .pdf-attribution{display:block!important;position:fixed;bottom:3mm;left:0;right:0;text-align:center;font-size:10px;font-weight:600;color:#657183;background:white;z-index:100}
+}
+/* The personal PDF prints the chosen doctor's exact schedule cards only. */
+@media print{
+ html.print-personal #view-roster{display:none!important}
+ html.print-personal #view-personal{display:block!important;direction:ltr;text-align:left}
+ html.print-personal .personal-print-heading{display:block!important;text-align:center;font-size:18px;font-weight:800;line-height:1.5;margin:0 0 12px;break-after:avoid}
+ html.print-personal #view-personal>.section-heading{display:none!important}
+ html.print-personal .personal-controls{display:none!important}
+ html.print-personal .personal-top{color:#172d43!important;background:#ecf4f7!important;border:1px solid #d6e4ed!important;break-inside:avoid;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ html.print-personal .personal-top div{color:#33586b!important}
+ html.print-personal .personal-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;direction:ltr!important}
+ html.print-personal .personal-day{display:flex!important;align-items:center!important;justify-content:space-between!important;border:1px solid #dce5ef!important;break-inside:avoid!important;min-height:62px!important;padding:10px!important;box-shadow:none!important;direction:ltr!important}
+ html.print-personal .personal-day span, html.print-personal .personal-day small{text-align:left!important;direction:ltr!important}
+ html.print-personal .personal-day .shift-pill{display:block!important;width:auto!important;max-width:52%;margin:0!important;white-space:nowrap!important;font-size:11px!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important}
+ html.print-personal .personal-day .shift-pill small{font-size:9px!important}
+ html.print-personal .personal-day strong.MANUAL{background:#f9d5d5!important;color:#8e1818!important}
+ html.print-personal .personal-day strong.LEAVE{background:#171b25!important;color:white!important}
 }
   </style>
-
 
 </head>
 <body>
@@ -203,8 +221,8 @@
   </section>
   <section id="view-personal" class="view">
    <div class="section-heading"><div><p class="eyebrow">PERSONAL ROSTER</p><h2>جدول كل طبيب</h2><p class="muted">اختر الاسم، ثم اعرض المناوبات أو صدّرها.</p></div></div>
-   <div class="panel personal-controls no-print"><label class="field">اختر الطبيب <select id="selected-person"></select></label><button type="button" id="personal-csv" class="btn light">↓ تحميل جدول الشخص CSV</button></div>
-   <div id="personal-content"></div>
+   <div class="panel personal-controls no-print"><label class="field">اختر الطبيب <select id="selected-person"></select></label><button type="button" id="personal-csv" class="btn light">↓ تحميل جدول الشخص CSV</button><button type="button" id="personal-pdf" class="btn primary">↓ Download PDF</button></div>
+   <div id="personal-print-heading" class="personal-print-heading"></div><div id="personal-content"></div>
   </section>
   <section id="view-report" class="view">
    <div class="section-heading no-print"><div><p class="eyebrow">ROSTER STATISTICS</p><h2>الإحصائيات</h2><p class="muted">أرقام تلقائية من جدولك الحالي، حتى بعد التبديلات</p></div><button class="btn light" id="summary-export">↓ تقرير CSV</button></div>
@@ -599,8 +617,9 @@ function renderReport(){const root=$('report-content');if(!current){root.innerHT
 function renderPersonal(){
  const sel=$('selected-person'),root=$('personal-content'),old=Number(sel.value)||0;
  sel.innerHTML=draft.people.map((p,i)=>`<option value="${i}" ${i===Math.min(old,draft.people.length-1)?'selected':''}>${h(p.name)}</option>`).join('');
- if(!current){root.innerHTML='<div class="empty">أنشئ الجدول من الإعدادات أولًا.</div>';return;}
+ if(!current){$('personal-print-heading').textContent='';root.innerHTML='<div class="empty">أنشئ الجدول من الإعدادات أولًا.</div>';return;}
  const i=Number(sel.value),name=draft.people[i].name;
+ $('personal-print-heading').textContent=(draft.rosterTitle||'Emergency Department Duty Roster')+' · Doctor Schedule · '+name+' · '+draft.start;
  const shiftLabels={M:'Morning',E:'Evening',N:'Night','-':'Off',L:'Leave'};
  const summary={M:0,E:0,N:0,'-':0,L:0};
  const cards=current.dates.map(day=>{const t=displaySlot(day,i);summary[t]++;
@@ -608,6 +627,8 @@ function renderPersonal(){
  }).join('');
  root.innerHTML=`<div class="personal-top"><b>${h(name)}${draft.people[i].phone?' · '+h(draft.people[i].phone):''}</b><div>${summary.M} M · ${summary.E} E · ${summary.N} N · ${summary['-']} Off · ${summary.L} Leave</div></div><div class="personal-grid">${cards}</div>`;
 }
+function setPersonalPrintPaper(enabled){const old=document.getElementById('personal-print-paper');if(enabled&&!old){const style=document.createElement('style');style.id='personal-print-paper';style.media='print';style.textContent='@page{size:A4 portrait;margin:0}';document.head.appendChild(style);}else if(!enabled&&old){old.remove();}}
+function exportPersonalPDF(){if(!current){toast('Generate a roster first.');return;}document.documentElement.classList.add('print-personal');setPersonalPrintPaper(true);window.print();}
 function exportPersonal(){if(!current){toast('أنشئ الجدول أولًا');return}const i=Number($('selected-person').value),rows=[['Date','Day','Doctor','Shift','Start','End']];const tm={M:[draft.times.M.start,draft.times.M.end],E:[draft.times.E.start,draft.times.E.end],N:[draft.times.N.start,draft.times.N.end],'-':['','']};for(const day of current.dates){const t=displaySlot(day,i);rows.push([day.date,arabicDate(day.date),draft.people[i].name,t==='-'?'Off':t==='L'?'Leave':(isExtraShift(day,i)?t+' (Extra)':t),t==='L'?'':tm[t][0],t==='L'?'':tm[t][1]])};downloadFile(`ED_Doctor_${i+1}_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
 function render(){renderRoster();renderDetails();renderReport();renderPersonal();}
 function downloadFile(filename,content,mime){const b=new Blob([content],{type:mime}),link=document.createElement('a'),url=URL.createObjectURL(b);link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
@@ -635,10 +656,10 @@ function init(){const initial=load();draft=initial.cfg;current=initial.result;mi
  $('add-detail').addEventListener('click',()=>{if(workflow.locked)return;draft.details.push({name:'',role:'',phone:''});workflow.publishedId=null;detailsEditor();save();renderDetails()});
  $('people-editor').addEventListener('click',(e)=>{const del=e.target.closest('[data-remove]');if(!del)return;draft.people.splice(+del.dataset.remove,1);personEditor();markDirty()});
  $('add-person').addEventListener('click',addPerson);$('new-person').addEventListener('keydown',e=>{if(e.key==='Enter')addPerson()});
- $('lock-roster').addEventListener('click',lockRoster);$('unlock-roster').addEventListener('click',unlockRoster);$('publish-roster').addEventListener('click',publishRoster);$('publish-pdf').addEventListener('click',()=>{if(!current){toast('Generate a roster first.');return;}window.print()});$('version-history').addEventListener('click',versionAction);$('generate').addEventListener('click',generate);$('reset-sample').addEventListener('click',()=>{if(workflow.locked)return toast('Unlock first.');if(!confirm('ترجع بيانات المثال وتحذف الجدول الحالي من الجهاز؟'))return;let d=defaults();draft=d.cfg;current=null;workflow.publishedId=null;hydrate();save();toast('تمت استعادة المثال')});
+ $('lock-roster').addEventListener('click',lockRoster);$('unlock-roster').addEventListener('click',unlockRoster);$('publish-roster').addEventListener('click',publishRoster);$('publish-pdf').addEventListener('click',()=>{if(!current){toast('Generate a roster first.');return;}document.documentElement.classList.remove('print-personal');setPersonalPrintPaper(false);window.print()});$('version-history').addEventListener('click',versionAction);$('generate').addEventListener('click',generate);$('reset-sample').addEventListener('click',()=>{if(workflow.locked)return toast('Unlock first.');if(!confirm('ترجع بيانات المثال وتحذف الجدول الحالي من الجهاز؟'))return;let d=defaults();draft=d.cfg;current=null;workflow.publishedId=null;hydrate();save();toast('تمت استعادة المثال')});
  $('roster-content').addEventListener('change',(e)=>{if(!e.target.matches('select[data-day][data-grid-person]'))return;changeGridSlot(+e.target.dataset.day,+e.target.dataset.gridPerson,e.target.value)});
- $('person-filter').addEventListener('change',renderRoster);$('selected-person').addEventListener('change',renderPersonal);$('personal-csv').addEventListener('click',exportPersonal);
- $('grid-csv-export').addEventListener('click',exportMatrix);$('csv-export').addEventListener('click',exportDaily);$('summary-export').addEventListener('click',exportReport);$('print-export').addEventListener('click',()=>{if(!current){toast('Generate a roster first.');return}window.print()});$('backup').addEventListener('click',exportBackup);$('restore').addEventListener('click',()=>$('restore-file').click());$('restore-file').addEventListener('change',e=>{if(e.target.files[0])restoreBackup(e.target.files[0]);e.target.value='' });
+ $('person-filter').addEventListener('change',renderRoster);$('selected-person').addEventListener('change',renderPersonal);$('personal-csv').addEventListener('click',exportPersonal);$('personal-pdf').addEventListener('click',exportPersonalPDF);window.addEventListener('afterprint',()=>{document.documentElement.classList.remove('print-personal');setPersonalPrintPaper(false);});
+ $('grid-csv-export').addEventListener('click',exportMatrix);$('csv-export').addEventListener('click',exportDaily);$('summary-export').addEventListener('click',exportReport);$('print-export').addEventListener('click',()=>{if(!current){toast('Generate a roster first.');return}document.documentElement.classList.remove('print-personal');setPersonalPrintPaper(false);window.print()});$('backup').addEventListener('click',exportBackup);$('restore').addEventListener('click',()=>$('restore-file').click());$('restore-file').addEventListener('change',e=>{if(e.target.files[0])restoreBackup(e.target.files[0]);e.target.value='' });
  if('serviceWorker' in navigator && location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
 init();
