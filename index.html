@@ -97,7 +97,7 @@
 .history-actions button{font-size:11px;padding:7px 9px}.locked-notice{font-size:12px;color:#23507a;font-weight:700;padding:4px 0}
 @media print{.workflow-panel,.history-panel{display:none!important}.roster-matrix .summary-label{position:static!important}.roster-matrix tfoot tr{break-inside:avoid}.matrix-shift.MANUAL,.matrix-shift.LEAVE{print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important}}
 
-/* v1.5: contact directory, editable rest rule, PDF details + attribution */
+/* v1.8: contact directory, editable rest rule, and top-right PDF attribution */
 .person-row,.mini-heading{grid-template-columns:30px minmax(122px,1fr) minmax(106px,1fr) minmax(126px,1.15fr) 33px;direction:ltr;text-align:left}
 .person-phone{height:38px;padding:8px 10px;font-size:13px;border:1px solid var(--line);border-radius:10px;min-width:0;width:100%;color:var(--ink);background:#fcfdff}
 .people-editor{overflow-x:auto}.person-row,.mini-heading{min-width:540px}
@@ -110,14 +110,13 @@
 .details-table th,.details-table td{border:1px solid var(--line);padding:9px 11px;text-align:left;background:#fff;word-break:break-word}.details-table th{background:#eef4f7}
 .roster-matrix .matrix-phone{width:145px;min-width:145px;max-width:145px;font-size:11px;overflow-wrap:anywhere;background:#f9fbfd}
 .roster-matrix thead .matrix-phone{background:#dfe9f1;font-weight:800;font-size:10px}
-.pdf-attribution{display:none}.personal-print-heading{display:none}
+.personal-print-heading{display:none}
 @media print{
  .roster-details{display:block!important;break-inside:avoid;margin-top:9mm;padding:5mm;border:1px solid #c8d3dc;box-shadow:none}
  .roster-details .details-table th,.roster-details .details-table td{font-size:10px;padding:4px 7px}
  .roster-matrix .matrix-phone{min-width:50px!important;max-width:75px!important;width:75px!important;font-size:7px!important}
  /* Reserve content margins in CSS rather than the browser page header/footer area. */
  .shell{padding:9mm 9mm 17mm!important}
- .pdf-attribution{display:block!important;position:fixed;bottom:3mm;left:0;right:0;text-align:center;font-size:8px;font-weight:600;color:#657183;background:white;z-index:100}
 }
 /* The personal PDF prints the chosen doctor's exact schedule cards only. */
 @media print{
@@ -144,7 +143,7 @@
  <header class="main-header no-print">
   <div class="brand-icon" aria-hidden="true">✚</div>
   <div><p class="eyebrow">ED HMG</p><h1>Emergency Schedule</h1><p class="heading-sub">موقع خاص</p></div>
-  <div class="header-chip">نسخة 1.5</div>
+  <div class="header-chip">نسخة 1.8</div>
  </header>
  <section class="intro no-print">
   <span class="glow"></span>
@@ -229,8 +228,7 @@
    <div id="report-content"></div>
   </section>
  </main>
- <div class="pdf-attribution">Prepared by Dr Saleh Alyami</div>
- <footer class="footer no-print"><p>ED HMG · Emergency Schedule · v1.5 <span>·</span> يعمل محليًا في المتصفح. البيانات لا تُرسل إلى خادم.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
+ <footer class="footer no-print"><p>ED HMG · Emergency Schedule · v1.8 <span>·</span> يعمل محليًا في المتصفح. البيانات لا تُرسل إلى خادم.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -665,9 +663,6 @@ function pdfFrame(page,title,subtitle){
  pdfText(c,title,w/2,92,{size:26,bold:true,align:'center',max:w-110});
  pdfText(c,subtitle,w/2,122,{size:13,color:ED_PDF.secondary,align:'center',max:w-100});
  c.fillStyle=ED_PDF.teal;c.fillRect(44,142,w-88,3);
- // No browser URL or print timestamp can be injected: this footer is drawn into the PDF.
- c.fillStyle=ED_PDF.line;c.fillRect(44,h-48,w-88,1);
- pdfText(c,'Prepared by Dr Saleh Alyami',w/2,h-29,{size:9,color:ED_PDF.secondary,align:'center'});
 }
 function pdfColorForShift(s,day,i){if(s==='L')return ED_PDF.L;if(s==='-')return ED_PDF['-'];return isExtraShift(day,i)?ED_PDF.EXTRA:ED_PDF[s]||ED_PDF['-'];}
 function pdfShiftText(s,day,i){return s==='L'?'#ffffff':isExtraShift(day,i)?'#8c2022':ED_PDF.ink;}
