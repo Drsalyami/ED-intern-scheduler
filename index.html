@@ -150,6 +150,10 @@
 .archive-card.current .archive-card-status{background:#d3eee9;color:#0d6e63}
 .archive-card-actions{display:flex;gap:7px;flex-wrap:wrap;direction:ltr}
 .archive-card-actions button{font-size:12px;padding:7px 12px}
+/* Destructive actions are visibly distinct and always ask for confirmation. */
+.btn.delete-action{color:#a42c3c;border-color:#e6b7bf;background:#fff7f8}
+.btn.delete-action:hover:not(:disabled){background:#ffe9ed}
+.btn.delete-action:focus-visible{outline:3px solid #c54b5d;outline-offset:2px}
 .archive-comparison-inputs{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:15px}
 .archive-comparison-inputs .field{flex:1 1 175px}
 .archive-comparison-inputs select{height:42px;padding:8px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);width:100%;min-width:0}
@@ -170,7 +174,7 @@
  <header class="main-header no-print">
   <div class="brand-icon" aria-hidden="true">✚</div>
   <div><p class="eyebrow">ED HMG</p><h1>Emergency Schedule</h1><p class="heading-sub">موقع خاص</p></div>
-  <div class="header-chip">نسخة 1.9</div>
+  <div class="header-chip">نسخة 1.9.1</div>
  </header>
  <section class="intro no-print">
   <span class="glow"></span>
@@ -275,7 +279,7 @@
    <div id="report-content"></div>
   </section>
  </main>
- <footer class="footer no-print"><p>ED HMG · Emergency Schedule · v1.9 <span>·</span> يعمل محليًا في المتصفح. البيانات لا تُرسل إلى خادم.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
+ <footer class="footer no-print"><p>ED HMG · Emergency Schedule · v1.9.1 <span>·</span> يعمل محليًا في المتصفح. البيانات لا تُرسل إلى خادم.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -557,12 +561,34 @@ function renderBlocks(){
  const ordered=[...blocks].sort((a,b)=>b.cfg.start.localeCompare(a.cfg.start));
  list.innerHTML=ordered.map(b=>{const metric=b.result?.dates?.length?b.result.dates.reduce((n,d)=>n+d.assignments.filter(isShift).length,0):0;
   const state=b.workflow?.publishedId?'Published '+b.workflow.publishedId:b.workflow?.locked?'Locked':b.result?'Draft':'Not generated';
-  return `<article class="archive-card ${b.id===activeBlockId?'current':''}"><span class="archive-card-status">${b.id===activeBlockId?'● Current · ':''}${h(state)}</span><h4>${h(b.label)}</h4><p>${h(b.cfg.start)} · ${b.cfg.days} days · ${b.cfg.people.length} doctors · ${metric} shifts</p><p>Last saved ${h((b.updatedAt||'').replace('T',' ').slice(0,16))} UTC</p><div class="archive-card-actions"><button type="button" class="btn light" data-open-block="${h(b.id)}" ${b.id===activeBlockId?'disabled':''}>Open</button><button type="button" class="btn outline" data-clone-block="${h(b.id)}">Copy settings</button><button type="button" class="btn outline" data-rename-block="${h(b.id)}">Rename</button></div></article>`;
+  return `<article class="archive-card ${b.id===activeBlockId?'current':''}"><span class="archive-card-status">${b.id===activeBlockId?'● Current · ':''}${h(state)}</span><h4>${h(b.label)}</h4><p>${h(b.cfg.start)} · ${b.cfg.days} days · ${b.cfg.people.length} doctors · ${metric} shifts</p><p>Last saved ${h((b.updatedAt||'').replace('T',' ').slice(0,16))} UTC</p><div class="archive-card-actions"><button type="button" class="btn light" data-open-block="${h(b.id)}" ${b.id===activeBlockId?'disabled':''}>Open</button><button type="button" class="btn outline" data-clone-block="${h(b.id)}">Copy settings</button><button type="button" class="btn outline" data-rename-block="${h(b.id)}">Rename</button><button type="button" class="btn delete-action" data-delete-block="${h(b.id)}" ${blocks.length===1?'disabled title="Keep at least one block"':''}>🗑 Delete</button></div></article>`;
  }).join('');
  for(const [id,selected] of [['compare-a',archiveCompareA],['compare-b',archiveCompareB]]){
    const field=$(id),desired=selected&&blocks.some(b=>b.id===selected)?selected:id==='compare-a'?blocks[0]?.id:blocks[Math.min(1,blocks.length-1)]?.id;
    field.innerHTML=ordered.map(b=>`<option value="${h(b.id)}">${h(b.label)}</option>`).join('');field.value=desired||'';
  }
+}
+function deleteBlock(id){
+ const target=blocks.find(b=>b.id===id);if(!target)return;
+ if(blocks.length<=1)return toast('Keep at least one block. Create another block before deleting this one.');
+ const wasCurrent=id===activeBlockId;
+ if(!confirm(`Delete block "${target.label}" permanently? This also deletes its saved roster, contact details and version history. This cannot be undone unless you exported a backup.`))return;
+ // Flush other pending state before removing the selected snapshot.
+ save();
+ blocks=blocks.filter(b=>b.id!==id);
+ if(wasCurrent){
+  const next=[...blocks].sort((a,b)=>b.cfg.start.localeCompare(a.cfg.start))[0];
+  activeBlockId=next.id;draft=copy(next.cfg);current=copy(next.result||null);
+  workflow=copy(next.workflow||{locked:false,publishedId:null,versions:[]});
+  workflow.versions??=[];migrateExtraShifts(current,draft);
+ }
+ if(archiveCompareA===id)archiveCompareA='';
+ if(archiveCompareB===id)archiveCompareB='';
+ save();
+ if(wasCurrent)hydrate();
+ renderBlocks();
+ $('archive-comparison').innerHTML='<p class="muted">Select two saved blocks and click Compare to refresh the comparison.</p>';
+ toast('Deleted saved block: '+target.label);
 }
 function openBlock(id){const b=blocks.find(x=>x.id===id);if(!b)return;
  if(b.id===activeBlockId)return toast('This block is already open.');
@@ -757,7 +783,9 @@ function publishRoster(){
  const conflicts=G.audit(draft,current);if(conflicts.length)return toast('Resolve rest/leave conflicts before publishing.');
  const missing=shortage();
  if(missing&&!confirm(`${missing} shifts remain unfilled. Publish an INCOMPLETE roster with this warning?`))return;
- const next=Math.max(0,...workflow.versions.map(v=>Number(v.number)||0))+1;
+ // Never reuse a version label even when the latest saved version was deleted.
+ const next=Math.max(Number(workflow.lastVersionNumber)||0,0,...workflow.versions.map(v=>Number(v.number)||0))+1;
+ workflow.lastVersionNumber=next;
  const stamp=new Date().toISOString(),label='V'+next;
  workflow.versions.push({number:next,id:label,at:stamp,missing,cfg:copy(draft),result:copy(current)});
  workflow.publishedId=label;save();render();toast('Published locally as '+label+'. Export the PDF / JSON backup to share it.');
@@ -765,12 +793,20 @@ function publishRoster(){
 function renderHistory(){
  const root=$('version-history');$('history-count').textContent=workflow.versions.length+' versions';
  if(!workflow.versions.length){root.innerHTML='<p class="muted small">No published versions yet. Lock and Publish to save the first snapshot.</p>';return;}
- root.innerHTML=[...workflow.versions].reverse().map(v=>`<div class="history-item"><div><strong>${h(v.id)} · ${h(v.cfg.start)} (${v.cfg.days} days)</strong><div class="history-meta">${h(new Date(v.at).toLocaleString('en-GB'))} · ${v.missing||0} unfilled · ${v.result.dates.length} days</div></div><div class="history-actions"><button type="button" class="btn outline" data-history="export" data-version="${v.number}">↓ JSON</button><button type="button" class="btn outline" data-history="restore" data-version="${v.number}">↶ Restore draft</button></div></div>`).join('');
+ root.innerHTML=[...workflow.versions].reverse().map(v=>`<div class="history-item"><div><strong>${h(v.id)} · ${h(v.cfg.start)} (${v.cfg.days} days)</strong><div class="history-meta">${h(new Date(v.at).toLocaleString('en-GB'))} · ${v.missing||0} unfilled · ${v.result.dates.length} days</div></div><div class="history-actions"><button type="button" class="btn outline" data-history="export" data-version="${v.number}">↓ JSON</button><button type="button" class="btn outline" data-history="restore" data-version="${v.number}">↶ Restore draft</button><button type="button" class="btn delete-action" data-history="delete" data-version="${v.number}">🗑 Delete</button></div></div>`).join('');
 }
 function versionAction(e){
  const btn=e.target.closest('button[data-history]');if(!btn)return;
  const v=workflow.versions.find(v=>v.number===Number(btn.dataset.version));if(!v)return;
  if(btn.dataset.history==='export')return downloadFile(`ED_Published_${v.id}_${v.cfg.start}.json`,JSON.stringify(v,null,2),'application/json');
+ if(btn.dataset.history==='delete'){
+  if(!confirm(`Permanently delete published version ${v.id} for ${v.cfg.start}? This removes only this saved version; the current roster and other versions remain. Export its JSON first if you may need it later.`))return;
+  workflow.lastVersionNumber=Math.max(Number(workflow.lastVersionNumber)||0,Number(v.number)||0);
+  workflow.versions=workflow.versions.filter(item=>Number(item.number)!==Number(v.number));
+  if(workflow.publishedId===v.id)workflow.publishedId=null;
+  save();render();toast('Deleted saved version '+v.id);
+  return;
+ }
  if(btn.dataset.history==='restore'){
   if(!confirm(`Restore ${v.id} as a new EDITABLE draft? Your current working roster will be replaced. Published history is preserved. Export a backup first if needed.`))return;
   draft=copy(v.cfg);current=copy(v.result);workflow.locked=false;workflow.publishedId=null;save();hydrate();switchTab('roster');toast(v.id+' restored as a draft.');
@@ -979,7 +1015,8 @@ function init(){const initial=load();draft=initial.cfg;current=initial.result;lo
   $('archive-import').addEventListener('click',()=>$('archive-import-file').click());
   $('archive-import-file').addEventListener('change',e=>{if(e.target.files[0])importArchive(e.target.files[0]);e.target.value='';});
   $('archive-list').addEventListener('click',e=>{
-    const open=e.target.closest('[data-open-block]'),clone=e.target.closest('[data-clone-block]'),rename=e.target.closest('[data-rename-block]');
+    const open=e.target.closest('[data-open-block]'),clone=e.target.closest('[data-clone-block]'),rename=e.target.closest('[data-rename-block]'),del=e.target.closest('[data-delete-block]');
+    if(del)return deleteBlock(del.dataset.deleteBlock);
     if(open)return openBlock(open.dataset.openBlock);
     if(clone){const b=blocks.find(x=>x.id===clone.dataset.cloneBlock);if(b)createBlock(b);return;}
     if(rename){const b=blocks.find(x=>x.id===rename.dataset.renameBlock);if(!b)return;const input=prompt('Block name:',b.label);if(input?.trim()){b.label=input.trim().slice(0,120);save();renderBlocks();}return;}
