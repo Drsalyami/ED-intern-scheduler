@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#102841">
   <meta name="description" content="ED HMG: Emergency Schedule · جدول الطوارئ مقدم من د صالح اليامي">
   <title>Emergency Schedule | ED HMG · Dr Saleh Alyami</title>
+<script src="./cloud-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 
 
@@ -167,7 +169,7 @@
 .archive-diff.plus{color:#a94829}.archive-diff.minus{color:#0d8064}
 @media(max-width:520px){.archive-list{grid-template-columns:1fr}.archive-buttons button{flex:1 1 150px}.archive-card{padding:12px}}
 
-/* v1.9.2 Optional scheduling rules */
+/* v2.0 Optional scheduling rules */
 .optional-rules-panel{direction:rtl}
 .optional-top-note{border:1px solid #cce5e2;border-radius:12px;background:#f0faf8;color:#365d61;padding:12px;font-size:12px;margin:10px 0 16px;line-height:1.8}
 .optional-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:18px 0 9px}.optional-head strong{font-size:15px}.optional-head span{font-size:12px;color:var(--muted)}
@@ -183,7 +185,21 @@
 .optional-danger{background:white;color:#a13d3d;border:1px solid #e9caca;border-radius:9px;padding:7px 10px;cursor:pointer}
 .optional-empty{color:var(--muted);font-size:12px;padding:10px;background:#f8fafc;border-radius:9px}
 @media(max-width:520px){.optional-add input{max-width:none}.optional-pair label{min-width:120px}}
-  </style>
+  
+/* Shared login and immutable server-side activity history (v2.0). */
+.cloud-gate[hidden],[hidden]{display:none!important}
+.cloud-gate{position:fixed;inset:0;overflow:auto;background:linear-gradient(135deg,#102841,#145a62);z-index:9999;padding:clamp(20px,5vw,65px);display:flex;align-items:center;justify-content:center}
+.cloud-gate-box{background:white;width:min(520px,100%);border-radius:20px;padding:25px;box-shadow:0 18px 60px #06182555;display:grid;gap:12px}
+.cloud-gate-box h2{font-size:23px;margin:0}.cloud-gate-box p{font-size:13px;color:#5b7088}.cloud-gate-box .field{margin-bottom:12px}.cloud-gate-logo{font-weight:850;color:#0a827a}
+.cloud-workspace-panel .field{margin-bottom:12px}.cloud-info{background:#f3f8fa;border:1px solid #dce8ef;border-radius:12px;padding:14px;line-height:1.9;font-size:13px;margin-bottom:16px}
+.cloud-feedback{font-size:13px;color:#14695e;white-space:pre-wrap}.cloud-audit-items{max-height:480px;overflow-y:auto}
+.cloud-audit-entry{padding:12px 4px;border-bottom:1px solid #e1eaf1;font-size:13px;direction:ltr;text-align:left;overflow-wrap:anywhere}
+.cloud-audit-entry strong{color:#165c78}.cloud-audit-entry div{color:#677a8f}.cloud-invite-row{padding:10px;background:#f1f6fa;border-radius:9px;margin-bottom:9px}
+html.cloud-configured:not(.cloud-ready) .shell{visibility:hidden}
+body.cloud-viewer #view-settings input,body.cloud-viewer #view-settings select,body.cloud-viewer #view-settings button,body.cloud-viewer #view-roster .roster-matrix select,body.cloud-viewer #view-roster .workflow-actions button,body.cloud-viewer #view-roster .history-actions button,body.cloud-viewer #view-blocks .archive-buttons button,body.cloud-viewer #view-blocks .archive-card-actions button{pointer-events:none!important;opacity:.5!important}
+body.cloud-viewer #view-blocks .archive-card-actions [data-open-block]{pointer-events:auto!important;opacity:1!important}
+@media print{.cloud-gate,#view-cloud,.cloud-feedback{display:none!important}}
+</style>
 
 </head>
 <body>
@@ -191,23 +207,41 @@
  <header class="main-header no-print">
   <div class="brand-icon" aria-hidden="true">✚</div>
   <div><p class="eyebrow">ED HMG</p><h1>Emergency Schedule</h1><p class="heading-sub">موقع خاص</p></div>
-  <div class="header-chip">نسخة 1.9.2</div>
+  <div class="header-chip">نسخة 2.0</div>
  </header>
  <section class="intro no-print">
   <span class="glow"></span>
   <p class="subhead">Shift Planning / تخطيط المناوبات</p>
   <h2>جدول الطوارئ مقدم من د صالح اليامي</h2>
   <p>حدد الأسماء، التغطية، الإجازات، وقواعد الراحة. التطبيق ينشئ جدولًا ويكشف التعارضات قبل تصديره.</p>
-  <div class="intro-pills"><span>📱 مناسب للجوال</span><span>🗂️ أرشيف شهري على جهازك</span><span>📄 PDF / CSV</span></div>
+  <div class="intro-pills"><span>📱 مناسب للجوال</span><span>👥 Shared accounts (setup required)</span><span>📄 PDF / CSV</span></div>
  </section>
  <nav class="tabs no-print" aria-label="الأقسام">
   <button id="tab-settings" class="tab active" data-tab="settings">⚙️ الإعدادات</button>
   <button id="tab-roster" class="tab" data-tab="roster">📅 الجدول</button>
   <button id="tab-report" class="tab" data-tab="report">📊 الإحصائيات</button>
   <button id="tab-personal" class="tab" data-tab="personal">👤 جدولي</button>
+   <button id="tab-cloud" class="tab" data-tab="cloud">👥 الحسابات والسجل</button>
   <button id="tab-blocks" class="tab" data-tab="blocks">🗂️ أرشيف البلوكات</button>
  </nav>
  <main>
+  <section id="view-cloud" class="view">
+   <section class="panel cloud-workspace-panel">
+    <div class="panel-top"><div><h3>Shared Access / الحسابات المشتركة</h3><p>تسجيل دخول حقيقي ومزامنة جداول الفريق، وليس كلمة مرور داخل الصفحة.</p></div><span class="icon-mini">🔐</span></div>
+    <div class="cloud-info"><strong>Current account:</strong> <span id="cloud-account-email">Not signed in</span><br><strong>Shared workspace:</strong> <span id="cloud-active-workspace">Not connected</span><br><strong>Sync status:</strong> <span id="cloud-save-status">Not connected</span></div>
+    <div id="cloud-connection-panel" class="cloud-cloud-setup"><p>للتفعيل: أنشئ مشروع Supabase، وشغّل ملف SQL المرفق، ثم أدخل Project URL وPublishable Key (لا تستخدم secret key).</p>
+     <div class="field-grid"><label class="field">Supabase Project URL<input id="cloud-config-url" dir="ltr" placeholder="https://yourproject.supabase.co" type="url"></label><label class="field">Publishable / anon key<input id="cloud-config-key" dir="ltr" placeholder="sb_publishable_..." type="text" autocomplete="off"></label></div>
+     <div class="archive-buttons"><button type="button" class="btn primary" id="cloud-save-config">Connect this device</button><button type="button" class="btn outline" id="cloud-download-config">Download cloud-config.js for GitHub</button></div>
+    </div>
+    <div id="cloud-logged-panel" hidden><p>Each person signs in using their own confirmed email address. Sharing requires that the admin adds their email as an invitation.</p>
+     <div class="archive-buttons"><button type="button" id="cloud-signout" class="btn outline">Sign out</button></div>
+    </div>
+    <div id="cloud-session-panel" hidden><label class="field">Workspace<select id="cloud-workspace-select"></select></label><div class="archive-buttons"><button type="button" id="cloud-sync-now" class="btn primary">💾 Save to shared workspace</button><button type="button" id="cloud-reload" class="btn outline">↻ Refresh shared schedule</button><button type="button" id="cloud-import-local" class="btn outline">↑ Import THIS device's local archive</button></div><p class="small muted">Changes auto-save online after a short delay. If two people modify the same version, the server prevents overwriting newer edits. Export a local archive backup before migration.</p></div>
+    <div id="cloud-admin-panel" hidden><h3>Invite colleague</h3><div class="field-grid"><label class="field">Email<input type="email" id="cloud-invite-email" placeholder="friend@example.com" dir="ltr"></label><label class="field">Permission<select id="cloud-invite-role"><option value="viewer">Viewer — view only</option><option value="editor">Editor — edit schedules</option></select></label></div><button type="button" class="btn primary" id="cloud-invite-send">Save invitation</button><p class="small muted">Invitations do not send emails automatically. Send your friend the website link yourself; they must sign up and accept the invitation.</p></div>
+   </section>
+   <section class="panel"><div class="panel-top"><div><h3>Activity Log / سجل العمليات</h3><p>تغييرات معتمدة من قاعدة البيانات باسم الحساب ووقت الحفظ، متاحة لكل عضو في الفريق.</p></div><button type="button" class="btn light" id="cloud-load-audit">↻ Refresh log</button></div><div id="cloud-audit-items" class="cloud-audit-items">Connect to a shared workspace to view the log.</div></section>
+   <p id="cloud-message" class="cloud-feedback" role="status" aria-live="polite"></p>
+  </section>
   <section id="view-blocks" class="view">
     <div class="section-heading"><div><p class="eyebrow">BLOCK ARCHIVE</p><h2>أرشيف البلوكات الشهرية</h2><p class="muted">كل بلوك له جدول مستقل، ويمكن فتح القديم أو نسخ إعداداته لبلوك جديد.</p></div></div>
     <section class="panel archive-toolbar">
@@ -306,7 +340,16 @@
    <div id="report-content"></div>
   </section>
  </main>
- <footer class="footer no-print"><p>ED HMG · Emergency Schedule · v1.9.2 <span>·</span> يعمل محليًا في المتصفح. البيانات لا تُرسل إلى خادم.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
+ <footer class="footer no-print"><p>ED HMG · Emergency Schedule · v2.0 <span>·</span> يدعم الأرشيف المحلي أو المزامنة المشفّرة بخدمة Supabase بعد ربطها.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
+</div>
+<div id="cloud-gate" class="cloud-gate" hidden>
+ <div class="cloud-gate-box"><div class="cloud-gate-logo">✚ ED HMG</div><h2>Emergency Schedule · Shared Access</h2><p>Sign in to access the shared roster. Each doctor uses a separate account.</p>
+  <div id="cloud-gate-login"><label class="field">Email<input id="cloud-login-email" type="email" dir="ltr" autocomplete="username" placeholder="you@example.com"></label><label class="field">Password<input id="cloud-login-password" type="password" autocomplete="current-password" placeholder="Your password"></label>
+   <div class="archive-buttons"><button type="button" id="cloud-login-in" class="btn primary">Sign in</button><button type="button" id="cloud-login-up" class="btn outline">Create account</button></div>
+  </div>
+  <div id="cloud-gate-workspaces" hidden><p>You're signed in. Create a workspace for your team or accept your colleague's invitation.</p><label class="field">New workspace name<input id="cloud-new-workspace" placeholder="Emergency Department Team"></label><button type="button" id="cloud-create-workspace" class="btn primary">Create workspace</button><button type="button" id="cloud-gate-signout" class="btn outline">Sign out</button><h3>Pending invitations</h3><div id="cloud-pending-invites"></div></div>
+  <p id="cloud-gate-message" role="status" aria-live="polite"></p>
+ </div>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -631,8 +674,12 @@ function load(){try{let d=JSON.parse(localStorage.getItem(STORAGE));if(d?.cfg?.p
 function save(){
  try{
    const snapshot={cfg:copy(draft),result:copy(current),workflow:copy(workflow)};
-   localStorage.setItem(STORAGE,JSON.stringify(snapshot));
    if(activeBlockId){const found=blocks.find(b=>b.id===activeBlockId);if(found){const originalAutoName=blockLabel(found.cfg);if(found.label===originalAutoName)found.label=blockLabel(draft);Object.assign(found,snapshot,{updatedAt:new Date().toISOString()});}}
+   if(window.EDHMGCloud?.isCloudActive?.()){
+     window.EDHMGCloud.changed();
+     return;
+   }
+   localStorage.setItem(STORAGE,JSON.stringify(snapshot));
    localStorage.setItem(ARCHIVE_KEY,JSON.stringify({version:1,activeId:activeBlockId,blocks}));
  }catch(_e){toast('Browser storage is full or unavailable. Export your archive backup to avoid data loss.');}
 }
@@ -878,7 +925,7 @@ function changeGridSlot(dayIndex,personIndex,newShift){
   if(oldManual===undefined)delete current.manualShifts[key];else current.manualShifts[key]=oldManual;
   if(oldExtra===undefined)delete current.extraShifts[key];else current.extraShifts[key]=oldExtra;
   render();toast('Edit rejected: '+conflicts.slice(0,2).join(' | '));return;}
- workflow.publishedId=null;cleanExtraShifts(personIndex);recount();save();personEditor();render();toast(newShift==='L'?'Leave marked. Coverage updated.':'Shift updated. Extra shifts over the limit are red.');
+ workflow.publishedId=null;cleanExtraShifts(personIndex);recount();window.EDHMGCloud?.note?.('Shift '+draft.people[personIndex].name+' · '+day.date+' · '+previous+' → '+newShift);save();personEditor();render();toast(newShift==='L'?'Leave marked. Coverage updated.':'Shift updated. Extra shifts over the limit are red.');
 }
 
 function shortage(){
@@ -910,12 +957,12 @@ function lockRoster(){
  const conflicts=G.audit(draft,current);if(conflicts.length)return toast('Resolve safety conflicts before locking.');
  const missing=shortage();
  if(missing&&!confirm(`There are ${missing} unfilled shifts. Lock this INCOMPLETE roster anyway?`))return;
- workflow.locked=true;save();render();toast('Roster locked.');
+ workflow.locked=true;window.EDHMGCloud?.note?.('Roster locked · '+draft.rosterTitle);save();render();toast('Roster locked.');
 }
 function unlockRoster(){
  if(!current)return;
  if(!confirm('Unlock this roster? New edits will create a draft; previous published versions stay in history.'))return;
- workflow.locked=false;workflow.publishedId=null;save();render();toast('Roster unlocked for edits.');
+ workflow.locked=false;workflow.publishedId=null;window.EDHMGCloud?.note?.('Roster unlocked · '+draft.rosterTitle);save();render();toast('Roster unlocked for edits.');
 }
 function publishRoster(){
  if(!current||!workflow.locked)return toast('Lock the roster before publishing.');
@@ -928,7 +975,7 @@ function publishRoster(){
  workflow.lastVersionNumber=next;
  const stamp=new Date().toISOString(),label='V'+next;
  workflow.versions.push({number:next,id:label,at:stamp,missing,cfg:copy(draft),result:copy(current)});
- workflow.publishedId=label;save();render();toast('Published locally as '+label+'. Export the PDF / JSON backup to share it.');
+ workflow.publishedId=label;window.EDHMGCloud?.note?.('Roster published · '+label+' · '+draft.rosterTitle);save();render();toast('Published locally as '+label+'. Export the PDF / JSON backup to share it.');
 }
 function renderHistory(){
  const root=$('version-history');$('history-count').textContent=workflow.versions.length+' versions';
@@ -1184,7 +1231,220 @@ function init(){const initial=load();draft=initial.cfg;current=initial.result;lo
  $('grid-csv-export').addEventListener('click',exportMatrix);$('csv-export').addEventListener('click',exportDaily);$('summary-export').addEventListener('click',exportReport);$('print-export').addEventListener('click',()=>edDirectPdf('roster'));$('backup').addEventListener('click',exportBackup);$('restore').addEventListener('click',()=>$('restore-file').click());$('restore-file').addEventListener('change',e=>{if(e.target.files[0])restoreBackup(e.target.files[0]);e.target.value='' });
  if('serviceWorker' in navigator && location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
+window.EDHMGApp={
+ getBlocks(){save();return copy(blocks);},
+ applyCloudState(remoteBlocks){
+  if(!Array.isArray(remoteBlocks)||!remoteBlocks.length)return;
+  const good=remoteBlocks.filter(blockIsValid).map(b=>copy(b));
+  if(!good.length)throw Error('Shared archive is not valid');
+  good.forEach(b=>normalizeOptional(b.cfg));
+  blocks=good;
+  const b=blocks.find(b=>b.id===activeBlockId)||blocks[0];
+  activeBlockId=b.id;draft=copy(b.cfg);current=copy(b.result||null);
+  workflow=copy(b.workflow||{locked:false,publishedId:null,versions:[]});workflow.versions??=[];
+  migrateExtraShifts(current,draft);hydrate();
+ }
+};
 init();
+})();
+
+</script>
+<script>
+(() => {
+'use strict';
+const CLOUD_KEY='ed-hmg-v2-cloud-config',ACTIVE_KEY='ed-hmg-v2-active-workspace';
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cloud={client:null,config:null,session:null,user:null,ws:null,role:null,revision:null,dirty:false,writing:false,applying:false,snapshotting:false,timer:null,refreshTimer:null,workspaceList:[],initialized:false,editSeq:0,pendingAction:""};
+const status=(str)=>{['cloud-message','cloud-gate-message'].forEach(id=>{const n=$(id);if(n)n.textContent=str});};
+const panel=(id,yes)=>{const el=$(id);if(el)el.hidden=!yes;};
+const errMsg=e=>String(e?.message||e||'Unknown error').replace(/^.*STALE_REVISION.*/s,'Another doctor saved a newer version. Export a backup of your edits, then reload the shared version.');
+const makeConfig=(data)=>{
+ const url=String(data.url||'').trim().replace(/\/$/,'');const key=String(data.key||'').trim();
+ if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url))throw Error('Enter a valid Supabase HTTPS Project URL.');
+ if(!/^(sb_publishable_|eyJ)[a-zA-Z0-9._-]{12,}$/.test(key))throw Error('Use a publishable / anon key only, NEVER a secret or service_role key.');
+ return {url,key};
+};
+function hasConfig(){return !!cloud.config;}
+function setGate(show){document.documentElement.classList.toggle('cloud-configured',hasConfig());document.documentElement.classList.toggle('cloud-ready',!show&&hasConfig());panel('cloud-gate',show);}
+function applyReadOnly(){
+ if(cloud.role!=='viewer')return;
+ document.querySelectorAll('#view-settings input,#view-settings select,#view-settings button,#view-roster .roster-matrix select,#view-roster .workflow-actions button,#view-roster .history-actions button,#view-blocks .archive-buttons button,#view-blocks .archive-card-actions button').forEach(el=>{
+  if(el.matches('#view-blocks [data-open-block]'))return;
+  if(!el.disabled)el.disabled=true;
+ });
+}
+function renderAccount(){
+ const signed=!!cloud.user;
+ $('cloud-account-email').textContent=signed?cloud.user.email:'Not signed in';
+ $('cloud-active-workspace').textContent=cloud.ws?cloud.ws.name+' · '+(cloud.role||''):'No shared workspace selected';
+ $('cloud-save-status').textContent=!cloud.ws?'Not connected':cloud.dirty?'Pending changes':cloud.writing?'Saving…':'Synced · rev '+cloud.revision;
+ panel('cloud-logged-panel',signed);panel('cloud-connection-panel',!hasConfig());
+ $('cloud-signout').disabled=!signed;
+ panel('cloud-admin-panel',!!cloud.ws&&cloud.role==='admin');
+ panel('cloud-session-panel',!!cloud.ws);
+ $('cloud-workspace-select').innerHTML=cloud.workspaceList.map(w=>`<option value="${esc(w.id)}" ${w.id===cloud.ws?.id?'selected':''}>${esc(w.name)}</option>`).join('');
+ $('cloud-workspace-select').disabled=cloud.workspaceList.length<2;
+ $('cloud-import-local').disabled=!cloud.ws||cloud.role==='viewer';
+ if(cloud.role==='viewer')document.body.classList.add('cloud-viewer');else document.body.classList.remove('cloud-viewer');
+ applyReadOnly();
+}
+async function connect(cfg){
+ if(!window.supabase?.createClient)throw Error('Could not load Supabase library. Check your internet connection.');
+ cloud.config=makeConfig(cfg);
+ cloud.client=window.supabase.createClient(cloud.config.url,cloud.config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ cloud.client.auth.onAuthStateChange((_event,session)=>{queueMicrotask(()=>{void acceptSession(session)})});
+ setGate(true);renderAccount();const {data,error}=await cloud.client.auth.getSession();if(error)throw error;
+ await acceptSession(data.session);
+}
+async function acceptSession(session){
+ const newId=session?.user?.id||null;if(cloud.user?.id===newId&&cloud.initialized)return;
+ cloud.initialized=true;cloud.session=session;cloud.user=session?.user||null;
+ if(!cloud.user){cloud.ws=null;cloud.role=null;setGate(true);panel('cloud-gate-login',true);panel('cloud-gate-workspaces',false);renderAccount();return;}
+ panel('cloud-gate-login',false);panel('cloud-gate-workspaces',true);
+ await listWorkspaces();renderAccount();
+}
+async function listWorkspaces(){
+ if(!cloud.user)return;
+ const r=await cloud.client.from('ed_members').select('workspace_id,role,ed_workspaces(name)').eq('user_id',cloud.user.id);
+ if(r.error){status('Database setup may be missing: '+errMsg(r.error));return;}
+ cloud.workspaceList=(r.data||[]).map(x=>({id:x.workspace_id,role:x.role,name:x.ed_workspaces?.name||x.workspace_id}));
+ const preferred=localStorage.getItem(ACTIVE_KEY);
+ const dest=cloud.workspaceList.find(x=>x.id===preferred)||cloud.workspaceList[0];
+ await showInvitations();
+ if(dest)await useWorkspace(dest.id);else{cloud.ws=null;cloud.role=null;setGate(true);renderAccount();status('Signed in. Create a workspace or accept an invitation to continue.');}
+}
+async function showInvitations(){
+ if(!cloud.client||!cloud.user)return;
+ const r=await cloud.client.from('ed_invitations').select('workspace_id,role,email').is('accepted_at',null);
+ if(r.error){$('cloud-pending-invites').textContent='Could not check invitations: '+errMsg(r.error);return;}
+ const arr=(r.data||[]).filter(x=>x.email.toLowerCase()===cloud.user.email.toLowerCase());
+ $('cloud-pending-invites').innerHTML=arr.length?arr.map(i=>`<div class="cloud-invite-row">Workspace: ${esc(i.workspace_id.slice(0,8))} · ${esc(i.role)} <button type="button" class="btn light" data-accept-workspace="${esc(i.workspace_id)}">Accept invitation</button></div>`).join(''):'No pending invitations.';
+}
+async function useWorkspace(id){
+ if(cloud.dirty){if(!confirm('Some local changes have not synced. Switch workspaces and discard those changes?'))return;}
+ const w=cloud.workspaceList.find(x=>x.id===id);if(!w)return;
+ cloud.ws=w;cloud.role=w.role;cloud.dirty=false;cloud.revision=null;
+ localStorage.setItem(ACTIVE_KEY,id);
+ const r=await cloud.client.from('ed_shared_states').select('state,revision').eq('workspace_id',id).single();
+ if(r.error){status('Cannot load workspace: '+errMsg(r.error));setGate(true);return;}
+ cloud.revision=r.data.revision;cloud.applying=true;
+ try{
+  const archive=r.data.state?.blocks||[];
+  if(archive.length)window.EDHMGApp.applyCloudState(archive);
+  else status('Workspace is empty. As Admin, use Import local archive to upload your existing blocks.');
+ }finally{cloud.applying=false;}
+ setGate(false);renderAccount();await loadAudit();status('Shared workspace connected · '+w.name);
+}
+function changed(){
+ if(!cloud.ws||cloud.applying||cloud.snapshotting||cloud.role==='viewer')return;
+ cloud.dirty=true;cloud.editSeq++;renderAccount();clearTimeout(cloud.timer);
+ cloud.timer=setTimeout(()=>{void syncNow(false)},2300);
+}
+async function syncNow(force){
+ if(!cloud.ws||cloud.writing||cloud.role==='viewer')return;
+ if(!cloud.dirty&&!force)return;
+ cloud.writing=true;clearTimeout(cloud.timer);renderAccount();
+ try{
+  const seq=cloud.editSeq;cloud.snapshotting=true;const blocks=window.EDHMGApp.getBlocks();cloud.snapshotting=false;
+  const r=await cloud.client.rpc('ed_save_state',{
+   p_workspace:cloud.ws.id,p_state:{blocks},p_expected_revision:cloud.revision,
+   p_note:cloud.pendingAction||'Schedule and archive updated'
+  });
+  if(r.error)throw r.error;
+  cloud.revision=r.data;cloud.dirty=cloud.editSeq!==seq;cloud.pendingAction='';status(cloud.dirty?'New edits pending, saving again…':'Saved to shared workspace.');await loadAudit();
+ }catch(e){cloud.snapshotting=false;cloud.dirty=true;status('NOT SAVED: '+errMsg(e));}
+ finally{cloud.writing=false;renderAccount();if(cloud.dirty&&cloud.revision!==null) {clearTimeout(cloud.timer);cloud.timer=setTimeout(()=>void syncNow(false),1600);}}
+}
+async function refreshRemote(manual=false){
+ if(!cloud.ws||cloud.dirty||cloud.writing){if(manual)status('Unsaved changes: save successfully or export backup before refresh.');return;}
+ if(!manual&&document.visibilityState==='hidden')return;
+ if(!manual&&['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
+ const r=await cloud.client.from('ed_shared_states').select('state,revision').eq('workspace_id',cloud.ws.id).single();
+ if(r.error){if(manual)status(errMsg(r.error));return;}
+ if(r.data.revision===cloud.revision){if(manual)status('Already up to date.');return;}
+ cloud.revision=r.data.revision;cloud.applying=true;
+ try{if(r.data.state?.blocks?.length)window.EDHMGApp.applyCloudState(r.data.state.blocks)}finally{cloud.applying=false;}
+ renderAccount();if(manual)status('Latest schedule loaded from cloud.');await loadAudit();
+}
+async function loadAudit(){
+ if(!cloud.ws)return;
+ const r=await cloud.client.from('ed_audit').select('id,actor_email,event,details,created_at,before_revision,after_revision').eq('workspace_id',cloud.ws.id).order('created_at',{ascending:false}).limit(100);
+ if(r.error){$('cloud-audit-items').textContent='Could not load audit: '+errMsg(r.error);return;}
+ $('cloud-audit-items').innerHTML=(r.data||[]).length?(r.data||[]).map(v=>`<div class="cloud-audit-entry"><strong>${esc(v.actor_email)}</strong> · ${esc(new Date(v.created_at).toLocaleString('en-GB'))}<div>${esc(v.event)} · ${esc(v.details)}</div></div>`).join(''):'No saved actions yet.';
+}
+async function signIn(create){
+ if(!cloud.client)return status('Configure the Supabase connection first.');
+ const email=$('cloud-login-email').value.trim(),password=$('cloud-login-password').value;
+ if(!email||password.length<6)return status('Enter a valid email and password (6+ characters).');
+ const r=create?await cloud.client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}}):await cloud.client.auth.signInWithPassword({email,password});
+ $('cloud-login-password').value='';
+ if(r.error)return status(errMsg(r.error));
+ if(create&&!r.data.session)status('Account created. Confirm the email you received, then return and sign in.');
+ else await acceptSession(r.data.session);
+}
+async function createWorkspace(){
+ const name=$('cloud-new-workspace').value.trim();if(!name)return status('Choose a workspace name.');
+ const r=await cloud.client.rpc('ed_create_workspace',{p_name:name});
+ if(r.error)return status(errMsg(r.error));
+ localStorage.setItem(ACTIVE_KEY,r.data);await listWorkspaces();
+ status('Workspace created. Next: import your current local archive if needed.');
+}
+async function acceptInvitation(id){
+ const r=await cloud.client.rpc('ed_accept_invite',{p_workspace:id});if(r.error)return status(errMsg(r.error));
+ localStorage.setItem(ACTIVE_KEY,id);await listWorkspaces();status('Invitation accepted. You now share the same schedule.');
+}
+async function sendInvite(){
+ if(cloud.role!=='admin')return;
+ const email=$('cloud-invite-email').value.trim(),role=$('cloud-invite-role').value;
+ const r=await cloud.client.rpc('ed_invite',{p_workspace:cloud.ws.id,p_email:email,p_role:role});
+ if(r.error)return status(errMsg(r.error));
+ $('cloud-invite-email').value='';status('Invitation recorded. Send your colleague the WEBSITE LINK yourself; no email is sent automatically.');await loadAudit();
+}
+async function importLocalArchive(){
+ if(!cloud.ws||cloud.role==='viewer')return;
+ if(!confirm('Upload this device’s CURRENT archive to the shared workspace, replacing its shared blocks? Export a backup first if the shared workspace has existing data.'))return;
+ cloud.dirty=true;await syncNow(true);
+}
+function savePublicConfig(){
+ try{const cfg=makeConfig({url:$('cloud-config-url').value,key:$('cloud-config-key').value});localStorage.setItem(CLOUD_KEY,JSON.stringify(cfg));location.reload();}
+ catch(e){status(errMsg(e));}
+}
+function downloadPublicConfig(){
+ try{const cfg=makeConfig({url:$('cloud-config-url').value,key:$('cloud-config-key').value});
+ const text='// Publishable key ONLY. RLS protects the underlying data.\nwindow.ED_HMG_CLOUD_CONFIG='+JSON.stringify(cfg,null,2)+';\n';
+ const u=URL.createObjectURL(new Blob([text],{type:'application/javascript'}));const a=document.createElement('a');a.download='cloud-config.js';a.href=u;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);
+ status('Download cloud-config.js and upload it beside index.html on GitHub Pages. The same website will then work for both users.');
+ }catch(e){status(errMsg(e));}
+}
+async function boot(){
+ const explicit=window.ED_HMG_CLOUD_CONFIG;
+ let config=explicit&&explicit.url&&!explicit.url.includes('YOUR-')?explicit:null;
+ if(!config){try{config=JSON.parse(localStorage.getItem(CLOUD_KEY)||'null')}catch{}}
+ if(!config){renderAccount();status('Local-only until you set up a Supabase project.');return;}
+ try{await connect(config)}catch(e){setGate(true);status('Cloud connection error: '+errMsg(e));}
+}
+window.EDHMGCloud={isCloudActive:()=>!!cloud.ws,changed,note:(action)=>{cloud.pendingAction=String(action||'').slice(0,220)}};
+document.addEventListener('DOMContentLoaded',()=>{
+ $('cloud-save-config').addEventListener('click',savePublicConfig);
+ $('cloud-download-config').addEventListener('click',downloadPublicConfig);
+ $('cloud-login-in').addEventListener('click',()=>void signIn(false));
+ $('cloud-login-up').addEventListener('click',()=>void signIn(true));
+ $('cloud-create-workspace').addEventListener('click',()=>void createWorkspace());
+ $('cloud-pending-invites').addEventListener('click',e=>{const b=e.target.closest('[data-accept-workspace]');if(b)void acceptInvitation(b.dataset.acceptWorkspace)});
+ $('cloud-gate-signout').addEventListener('click',async()=>{if(!cloud.client)return;await cloud.client.auth.signOut();cloud.ws=null;cloud.role=null;cloud.dirty=false;cloud.revision=null;setGate(true);renderAccount();});
+ $('cloud-signout').addEventListener('click',async()=>{if(cloud.dirty&&!confirm('Unsaved changes will be discarded. Sign out?'))return;await cloud.client.auth.signOut();cloud.ws=null;cloud.role=null;cloud.dirty=false;cloud.revision=null;setGate(true);renderAccount();});
+ $('cloud-invite-send').addEventListener('click',()=>void sendInvite());
+ $('cloud-import-local').addEventListener('click',()=>void importLocalArchive());
+ $('cloud-sync-now').addEventListener('click',()=>void syncNow(true));
+ $('cloud-reload').addEventListener('click',()=>void refreshRemote(true));
+ $('cloud-load-audit').addEventListener('click',()=>void loadAudit());
+ $('cloud-workspace-select').addEventListener('change',e=>void useWorkspace(e.target.value));
+ new MutationObserver(()=>applyReadOnly()).observe(document.querySelector('.shell'),{subtree:true,childList:true});
+ window.addEventListener('beforeunload',e=>{if(cloud.dirty){e.preventDefault();e.returnValue='';}});
+ cloud.refreshTimer=setInterval(()=>void refreshRemote(false),30000);
+ void boot();
+});
 })();
 
 </script>
