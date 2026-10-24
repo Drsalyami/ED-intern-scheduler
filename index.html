@@ -166,6 +166,23 @@
 .archive-compare-table .archive-total{background:#e8f5f1;font-weight:800}
 .archive-diff.plus{color:#a94829}.archive-diff.minus{color:#0d8064}
 @media(max-width:520px){.archive-list{grid-template-columns:1fr}.archive-buttons button{flex:1 1 150px}.archive-card{padding:12px}}
+
+/* v1.9.2 Optional scheduling rules */
+.optional-rules-panel{direction:rtl}
+.optional-top-note{border:1px solid #cce5e2;border-radius:12px;background:#f0faf8;color:#365d61;padding:12px;font-size:12px;margin:10px 0 16px;line-height:1.8}
+.optional-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:18px 0 9px}.optional-head strong{font-size:15px}.optional-head span{font-size:12px;color:var(--muted)}
+.optional-add{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 16px}.optional-add input{min-width:110px;max-width:220px;flex:1;border:1px solid var(--line);border-radius:9px;padding:9px;background:white}
+.optional-group{border:1px solid var(--line);border-radius:13px;padding:13px;margin:10px 0;background:#fbfdff}
+.optional-group-title{display:flex;justify-content:space-between;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:9px}
+.optional-group-title strong{color:var(--teal-dark)}.optional-doctors{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.optional-doctors label{display:flex;gap:8px;align-items:center;font-size:13px;background:white;border:1px solid var(--line);padding:8px;border-radius:9px;cursor:pointer}
+.optional-doctors input{accent-color:var(--teal);width:17px;height:17px;flex-shrink:0}
+.optional-pair{display:flex;gap:8px;align-items:end;flex-wrap:wrap;background:#fbfdff;border:1px solid var(--line);padding:10px;margin-bottom:8px;border-radius:12px}
+.optional-pair label{flex:1;min-width:135px;font-size:12px;font-weight:700;color:var(--ink2);display:flex;flex-direction:column;gap:5px}
+.optional-pair select{width:100%;min-width:0;border:1px solid var(--line);border-radius:9px;padding:9px;background:white;color:var(--ink)}
+.optional-danger{background:white;color:#a13d3d;border:1px solid #e9caca;border-radius:9px;padding:7px 10px;cursor:pointer}
+.optional-empty{color:var(--muted);font-size:12px;padding:10px;background:#f8fafc;border-radius:9px}
+@media(max-width:520px){.optional-add input{max-width:none}.optional-pair label{min-width:120px}}
   </style>
 
 </head>
@@ -174,7 +191,7 @@
  <header class="main-header no-print">
   <div class="brand-icon" aria-hidden="true">✚</div>
   <div><p class="eyebrow">ED HMG</p><h1>Emergency Schedule</h1><p class="heading-sub">موقع خاص</p></div>
-  <div class="header-chip">نسخة 1.9.1</div>
+  <div class="header-chip">نسخة 1.9.2</div>
  </header>
  <section class="intro no-print">
   <span class="glow"></span>
@@ -184,11 +201,11 @@
   <div class="intro-pills"><span>📱 مناسب للجوال</span><span>🗂️ أرشيف شهري على جهازك</span><span>📄 PDF / CSV</span></div>
  </section>
  <nav class="tabs no-print" aria-label="الأقسام">
-  <button id="tab-blocks" class="tab" data-tab="blocks">🗂️ أرشيف البلوكات</button>
-   <button id="tab-settings" class="tab active" data-tab="settings">⚙️ الإعدادات</button>
+  <button id="tab-settings" class="tab active" data-tab="settings">⚙️ الإعدادات</button>
   <button id="tab-roster" class="tab" data-tab="roster">📅 الجدول</button>
   <button id="tab-report" class="tab" data-tab="report">📊 الإحصائيات</button>
   <button id="tab-personal" class="tab" data-tab="personal">👤 جدولي</button>
+  <button id="tab-blocks" class="tab" data-tab="blocks">🗂️ أرشيف البلوكات</button>
  </nav>
  <main>
   <section id="view-blocks" class="view">
@@ -246,6 +263,16 @@
     <div class="inline-add"><button type="button" class="btn light" id="add-detail">+ Add detail</button></div>
     <p class="small muted">أدخل أرقام التواصل المسموح بمشاركتها فقط. أي رقم تكتبه يمكن أن يظهر في PDF المنشور.</p>
    </section>
+   <section class="panel optional-rules-panel">
+    <div class="panel-top"><div><h3>04 / اختياري</h3><p>منع تكرار أعضاء مجموعة معينة في نفس الشفت، وربط طبيب Junior بـSenior مفضل قدر الإمكان.</p></div><span class="icon-mini">👥</span></div>
+    <div class="optional-top-note"><strong>قواعد المجموعة إلزامية:</strong> لا يمكن لطبيبين يحملان الرمز نفسه ضمن المجموعة أن يعملا في الشفت نفسه. <strong>الربط تفضيلي</strong>، ويُراعى ما أمكن دون كسر قواعد الراحة أو الإجازات أو عدد الشفتات.</div>
+    <div class="optional-head"><strong>Doctor groups</strong><span>مثال: Code S ، Level Senior ، اختر أعضاء المجموعة</span></div>
+    <div id="optional-groups"></div>
+    <div class="optional-add"><input id="optional-group-code" maxlength="12" placeholder="Code: S" aria-label="Group code" autocapitalize="characters"><input id="optional-group-label" maxlength="36" placeholder="Level: Senior" aria-label="Group label"><button type="button" class="btn light" id="optional-add-group">+ Add group</button></div>
+    <div class="optional-head"><strong>Junior / Senior pairing</strong><span>حدد Junior والطبيب Senior المفضل له، ويحاول المولد جمعهما على نفس المناوبة.</span></div>
+    <div id="optional-pairs"></div><button type="button" class="btn light" id="optional-add-pair">+ Add preferred pair</button>
+    <p class="muted small">يحفظ التطبيق هذه الخيارات ضمن البلوك، وتُنسخ عند نسخ إعدادات البلوك. تراجع التعارضات قبل Lock / Publish.</p>
+   </section>
    <section class="panel policy-box">
     <div><h3>قواعد التوليد</h3><p>يفحص التغطية اليومية، الإجازات، حد الأيام المتتالية، وفترة الراحة التي تختارها بين الشفتات وفق الأوقات التي تختارها. التوليد التلقائي يحاول إيصال كل طبيب إلى عدد الشفتات المحدد له دون تجاوزه. عدد الأطباء في M/E/N حد أدنى وليس حدًا أقصى. إذا تعارض بلوغ الهدف مع الراحة أو الإجازات فسيظهر النقص بدل تجاوز القيود. يمكنك إضافة شفتات يدويًا من الجدول بعد التأكيد، مع استمرار فحص الإجازات والراحة.</p></div>
     <div class="info-symbol">✓</div>
@@ -279,7 +306,7 @@
    <div id="report-content"></div>
   </section>
  </main>
- <footer class="footer no-print"><p>ED HMG · Emergency Schedule · v1.9.1 <span>·</span> يعمل محليًا في المتصفح. البيانات لا تُرسل إلى خادم.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
+ <footer class="footer no-print"><p>ED HMG · Emergency Schedule · v1.9.2 <span>·</span> يعمل محليًا في المتصفح. البيانات لا تُرسل إلى خادم.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -315,7 +342,11 @@ function validInput(cfg){
  if(!Number.isInteger(cfg.targetShifts)||cfg.targetShifts<1)return 'أدخل عدد الشفتات المطلوب لكل طبيب (واحد أو أكثر).';
  if(!Number.isFinite(cfg.minRestHours)||cfg.minRestHours<0||cfg.minRestHours>24||cfg.minRestHours*2%1!==0)return 'حدد أقل وقت راحة بين الشفتات من 0 إلى 24 ساعة بفاصل نصف ساعة.';
  for(const type of ['M','E','N']){const t=shiftTimes(cfg,type);if(!t||!Number.isFinite(timeMinutes(t.start))||!Number.isFinite(timeMinutes(t.end)))return `حدد بداية ونهاية ${type}.`;if(duration(t)!==480)return `وقت ${type} يجب أن يكون 8 ساعات بالضبط (المدخل ${t.start} إلى ${t.end}).`;}
- // A target larger than the date range is a valid upper limit; each person still works at most once per day.
+ if(cfg.optionalRules){const groups=cfg.optionalRules.groups||[],pairs=cfg.optionalRules.pairs||[],ids=new Set(cfg.people.map(p=>p.id));
+   if(groups.some(g=>!g.code||!Array.isArray(g.memberIds)||g.memberIds.some(id=>!ids.has(id))))return 'تأكد من رموز وأعضاء المجموعات الاختيارية.';
+   if(pairs.some(p=>!ids.has(p.juniorId)||!ids.has(p.seniorId)||p.juniorId===p.seniorId))return 'تحقق من ربط Junior وSenior.';
+  }
+  // A target larger than the date range is a valid upper limit; each person still works at most once per day.
 
  return '';
 }
@@ -340,6 +371,63 @@ function pickWeighted(cands,score,stochastic){
  return ranked[j].id;
 }
 function seeded(seed){let x=seed|0;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296}}
+function optionalGroupClash(cfg,assignments,i,type){
+ if(type==='-')return false;
+ const id=cfg.people[i]?.id;
+ return (cfg.optionalRules?.groups||[]).some(g=>g.memberIds.includes(id)&&assignments.some((sh,j)=>j!==i&&sh===type&&g.memberIds.includes(cfg.people[j]?.id)));
+}
+function pairRoleScore(cfg,assigned,i,type){
+ const id=cfg.people[i]?.id;let impact=0;
+ for(const pair of (cfg.optionalRules?.pairs||[])){
+  let partner=null;
+  if(pair.juniorId===id)partner=pair.seniorId;
+  else if(pair.seniorId===id)partner=pair.juniorId;
+  if(!partner)continue;
+  const j=cfg.people.findIndex(p=>p.id===partner);if(j<0)continue;
+  if(assigned[j]===type)impact-=55;
+  else if(assigned[j]!=='-')impact+=19;
+ }
+ return impact;
+}
+function pairDayPenalty(cfg,row){
+ let n=0;
+ for(const pair of (cfg.optionalRules?.pairs||[])){
+  const a=cfg.people.findIndex(p=>p.id===pair.juniorId),b=cfg.people.findIndex(p=>p.id===pair.seniorId);
+  if(a<0||b<0)continue;
+  if(row[a]!=='-'&&row[b]!=='-')n+=(row[a]===row[b]?-70:36);
+ }
+ return n;
+}
+function pairAlignmentCount(cfg,row){
+ let n=0;for(const pair of (cfg.optionalRules?.pairs||[])){
+  const a=cfg.people.findIndex(p=>p.id===pair.juniorId),b=cfg.people.findIndex(p=>p.id===pair.seniorId);
+  if(a>=0&&b>=0&&row[a]!=='-'&&row[a]===row[b])n++;
+ }return n;
+}
+function alignPreferredPairs(state,cfg,day,assigned){
+ const date=addDays(cfg.start,day);
+ const can=(i,t,row)=>i>=0&&state.counts[i].all<cfg.targetShifts&&state.counts[i].consec<cfg.maxConsec&&
+  !leaveConflict(cfg,i,t,date)&&enoughRest(cfg,state.counts[i].prev,t)&&!optionalGroupClash(cfg,row,i,t);
+ // Reallocate within already chosen doctors only: preserve every doctor's total and per-shift coverage.
+ for(const pair of (cfg.optionalRules?.pairs||[])){
+  const a=cfg.people.findIndex(p=>p.id===pair.juniorId),b=cfg.people.findIndex(p=>p.id===pair.seniorId);
+  if(a<0||b<0||assigned[a]==='-'||assigned[b]==='-'||assigned[a]===assigned[b])continue;
+  const initial=pairAlignmentCount(cfg,assigned),aType=assigned[a],bType=assigned[b];
+  const trySwap=(subject,fromType,toType)=>{
+    for(let k=0;k<assigned.length;k++){
+      if(k===a||k===b||assigned[k]!==toType)continue;
+      const trial=[...assigned];trial[subject]=toType;trial[k]=fromType;
+      if(optionalGroupClash(cfg,trial,subject,toType)||optionalGroupClash(cfg,trial,k,fromType))continue;
+      if(leaveConflict(cfg,subject,toType,date)||!enoughRest(cfg,state.counts[subject].prev,toType))continue;
+      if(leaveConflict(cfg,k,fromType,date)||!enoughRest(cfg,state.counts[k].prev,fromType))continue;
+      if(pairAlignmentCount(cfg,trial)>initial){assigned.splice(0,assigned.length,...trial);return true;}
+    }
+    return false;
+  };
+  if(!trySwap(a,aType,bType))trySwap(b,bType,aType);
+ }
+ return assigned;
+}
 function getChoices(state,cfg,day,rng){
  const date=addDays(cfg.start,day),n=cfg.people.length;
  const remaining=Array.from({length:n},(_,i)=>i).filter(i=>state.counts[i].consec<cfg.maxConsec && state.counts[i].all<cfg.targetShifts);
@@ -348,7 +436,7 @@ function getChoices(state,cfg,day,rng){
  const types=[['M','E','N'],['E','N','M'],['N','M','E']][day%3];
  for(const type of types){
   for(let k=0;k<cfg.coverage[type];k++){
-   const candidates=remaining.filter(i=>!chosen.has(i) && !leaveConflict(cfg,i,type,date) && enoughRest(cfg,state.counts[i].prev,type));
+   const candidates=remaining.filter(i=>!chosen.has(i) && !leaveConflict(cfg,i,type,date) && enoughRest(cfg,state.counts[i].prev,type) && !optionalGroupClash(cfg,assignments,i,type));
    if(!candidates.length)continue;
    const target=(day+1)*cfg.coverage[type]/n;
    const person=pickWeighted(candidates,(i)=>{
@@ -358,7 +446,7 @@ function getChoices(state,cfg,day,rng){
     if(type!=='N'&&z.consec>=3)penalty+=0.8*(z.consec-2);
     if(type==='N'&&z.consec>=3)penalty+=0.7;
     if(type==='M'&&z.prev==='M')penalty+=0.35;
-    return penalty;
+    return penalty+pairRoleScore(cfg,assignments,i,type);
    },rng);
    chosen.add(person); assignments[person]=type;
   }
@@ -376,12 +464,12 @@ function getChoices(state,cfg,day,rng){
       if(chosen.has(i))continue;
       const z=state.counts[i];
       for(const type of ['M','E','N']){
-        if(leaveConflict(cfg,i,type,date)||!enoughRest(cfg,z.prev,type))continue;
+        if(leaveConflict(cfg,i,type,date)||!enoughRest(cfg,z.prev,type)||optionalGroupClash(cfg,assignments,i,type))continue;
         // Zero-minimum shifts remain possible, but get a lower priority.
         const share=cfg.coverage[type]/Math.max(1,cfg.coverage.M+cfg.coverage.E+cfg.coverage.N);
         const progress=totalType(type)-totalGoal*share*(day+1)/cfg.days;
         const backlog=(z.all-(day+1)*cfg.targetShifts/cfg.days);
-        const score=backlog*6.0+progress*1.8+(z[type]-cfg.targetShifts*share)*1.7+
+        const score=backlog*6.0+progress*1.8+(z[type]-cfg.targetShifts*share)*1.7+pairRoleScore(cfg,assignments,i,type)+
           (weekend(date)?z.wknd*.8:0)+(cfg.coverage[type]===0?3:0)+rng()*2;
         choices.push({i,type,score});
       }
@@ -391,7 +479,7 @@ function getChoices(state,cfg,day,rng){
     const selected=choices[Math.min(Math.floor(rng()*Math.min(3,choices.length)),choices.length-1)];
     chosen.add(selected.i);assignments[selected.i]=selected.type;
   }
- return assignments;
+ return alignPreferredPairs(state,cfg,day,assignments);
 }
 function apply(state,assignments,cfg,day){
  const counts=state.counts.map(p=>({...p}));
@@ -426,7 +514,7 @@ function generate(cfg,options={}){
      seen.add(signature);
      const fresh=apply(state,assignment,cfg,day);
      // Balance cumulative load plus future flexibility.
-     let penalty=weightState(fresh,day,cfg);
+     let penalty=weightState(fresh,day,cfg)+pairDayPenalty(cfg,assignment);
      const nextDay=addDays(cfg.start,day+1);
 const slots=cfg.coverage.M+cfg.coverage.E+cfg.coverage.N;
       if(day<cfg.days-1 && cfg.people.length*cfg.targetShifts >= (cfg.coverage.M+cfg.coverage.E+cfg.coverage.N)*cfg.days){
@@ -450,7 +538,7 @@ const slots=cfg.coverage.M+cfg.coverage.E+cfg.coverage.N;
    furthest=Math.max(furthest,day+1);
    if(!beam.length)break;
   }
-   for(const st of beam){if(st.rows.length===cfg.days){const belowTarget=st.counts.reduce((sum,p)=>sum+Math.max(0,cfg.targetShifts-p.all),0);const finalScore=scoreEnd(st,cfg)+belowTarget*2200+(st.unfilled||0)*280;if(!best||finalScore<best.finalScore)best={...st,finalScore};}}
+   for(const st of beam){if(st.rows.length===cfg.days){const belowTarget=st.counts.reduce((sum,p)=>sum+Math.max(0,cfg.targetShifts-p.all),0);const finalScore=scoreEnd(st,cfg)+belowTarget*2200+(st.unfilled||0)*280+st.rows.reduce((p,row)=>p+pairDayPenalty(cfg,row),0);if(!best||finalScore<best.finalScore)best={...st,finalScore};}}
   if(best&&best.finalScore<3)break;
  }
  if(!best)return {ok:false,error:`لم أجد جدولًا يستوفي جميع الشروط (وصل المحرك إلى اليوم ${furthest}). جرّب تعديل عدد الأيام أو تغطية الشفتات أو الإجازات. إذا كانت الأهداف متوافقة حسابيًا، قد يحتاج المحرك لتعديل القيود. لا تعتمد جدولًا ناقصًا.`};
@@ -484,6 +572,12 @@ function audit(cfg,result){if(!result.ok)return result.error;let errors=[];
    if(streak[i]>cfg.maxConsec)errors.push(`${r.date}: دوام متتالٍ ${i}`);
    previous[i]=t;
   });
+  for(const g of (cfg.optionalRules?.groups||[])){
+   for(const t of ['M','E','N']){
+    const members=r.assignments.map((sh,i)=>sh===t&&g.memberIds.includes(cfg.people[i]?.id)?cfg.people[i].name:null).filter(Boolean);
+    if(members.length>1)errors.push(`${r.date}: group ${g.code} / ${t} has ${members.join(', ')}`);
+   }
+  }
  });
  return errors;
 }
@@ -521,8 +615,19 @@ function migrateExtraShifts(result,cfg){
   }
  }
 }
-function defaults(){return {cfg:{start:'2026-11-01',days:28,maxConsec:5,minRestHours:11,rosterTitle:'Emergency Department Duty Roster',details:[{name:'',role:'',phone:''}],targetShifts:16,times:{M:{start:'07:00',end:'15:00'},E:{start:'15:00',end:'23:00'},N:{start:'23:00',end:'07:00'}},coverage:{M:2,E:2,N:1},people:Array.from({length:8},(_,i)=>({name:'Doctor '+String(i+1).padStart(2,'0'),phone:'',off:[]}))},result:null};}
-function load(){try{let d=JSON.parse(localStorage.getItem(STORAGE));if(d?.cfg?.people?.length){const x=defaults().cfg;d.cfg.targetShifts??=16;d.cfg.minRestHours??=11;d.cfg.rosterTitle??='Emergency Department Duty Roster';d.cfg.details??=[{name:'',role:'',phone:''}];d.cfg.people.forEach(p=>p.phone??='');d.cfg.times??=x.times;for(const t of ['M','E','N'])d.cfg.times[t]??=x.times[t];workflow={locked:!!d.workflow?.locked,publishedId:d.workflow?.publishedId||null,versions:Array.isArray(d.workflow?.versions)?d.workflow.versions:[]};return d;}}catch(_e){}return defaults()}
+function doctorId(){return 'doc-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);}
+function normalizeOptional(cfg){
+ if(!cfg||!Array.isArray(cfg.people))return;
+ const used=new Set();cfg.people.forEach(p=>{if(!p.id||used.has(p.id))p.id=doctorId();used.add(p.id);});
+ cfg.optionalRules??={groups:[],pairs:[]};
+ cfg.optionalRules.groups=Array.isArray(cfg.optionalRules.groups)?cfg.optionalRules.groups:[];
+ cfg.optionalRules.pairs=Array.isArray(cfg.optionalRules.pairs)?cfg.optionalRules.pairs:[];
+ cfg.optionalRules.groups=cfg.optionalRules.groups.filter(g=>g&&g.code&&Array.isArray(g.memberIds)).map(g=>({...g,memberIds:[...new Set(g.memberIds.filter(id=>used.has(id)))]}));
+ cfg.optionalRules.pairs=cfg.optionalRules.pairs.filter(p=>p&&used.has(p.juniorId)&&used.has(p.seniorId)&&p.juniorId!==p.seniorId);
+}
+function optionalIsConfigured(cfg){return Boolean(cfg.optionalRules?.groups?.length||cfg.optionalRules?.pairs?.length);}
+function defaults(){return {cfg:{start:'2026-11-01',days:28,maxConsec:5,minRestHours:11,rosterTitle:'Emergency Department Duty Roster',details:[{name:'',role:'',phone:''}],targetShifts:16,times:{M:{start:'07:00',end:'15:00'},E:{start:'15:00',end:'23:00'},N:{start:'23:00',end:'07:00'}},coverage:{M:2,E:2,N:1},people:Array.from({length:8},(_,i)=>({id:'demo-doctor-'+(i+1),name:'Doctor '+String(i+1).padStart(2,'0'),phone:'',off:[]})),optionalRules:{groups:[],pairs:[]}},result:null};}
+function load(){try{let d=JSON.parse(localStorage.getItem(STORAGE));if(d?.cfg?.people?.length){const x=defaults().cfg;d.cfg.targetShifts??=16;d.cfg.minRestHours??=11;d.cfg.rosterTitle??='Emergency Department Duty Roster';d.cfg.details??=[{name:'',role:'',phone:''}];d.cfg.people.forEach(p=>p.phone??='');normalizeOptional(d.cfg);d.cfg.times??=x.times;for(const t of ['M','E','N'])d.cfg.times[t]??=x.times[t];workflow={locked:!!d.workflow?.locked,publishedId:d.workflow?.publishedId||null,versions:Array.isArray(d.workflow?.versions)?d.workflow.versions:[]};return d;}}catch(_e){}return defaults()}
 function save(){
  try{
    const snapshot={cfg:copy(draft),result:copy(current),workflow:copy(workflow)};
@@ -540,12 +645,12 @@ function loadArchive(){
  let stored=null;
  try{stored=JSON.parse(localStorage.getItem(ARCHIVE_KEY)||'null')}catch(_e){}
  if(stored&&Array.isArray(stored.blocks)&&stored.blocks.length){
-   blocks=stored.blocks.filter(b=>b&&b.id&&b.cfg&&Array.isArray(b.cfg.people));
+   blocks=stored.blocks.filter(b=>b&&b.id&&b.cfg&&Array.isArray(b.cfg.people));blocks.forEach(b=>normalizeOptional(b.cfg));
    const active=blocks.find(b=>b.id===stored.activeId)||blocks[0];
    if(active){activeBlockId=active.id;draft=copy(active.cfg);current=copy(active.result||null);workflow=copy(active.workflow||{locked:false,publishedId:null,versions:[]});workflow.versions??=[];return;}
  }
  // Safe one-time migration of the existing v1.8 local roster.
- const initial=newBlockRecord(draft,current,workflow);blocks=[initial];activeBlockId=initial.id;save();
+ normalizeOptional(draft);const initial=newBlockRecord(draft,current,workflow);blocks=[initial];activeBlockId=initial.id;save();
 }
 function blockMetrics(block){
  const map=new Map(),people=block.cfg.people||[],dates=block.result?.dates||[];
@@ -597,7 +702,7 @@ function openBlock(id){const b=blocks.find(x=>x.id===id);if(!b)return;
 }
 function createBlock(source){
  save();const old=source?copy(source.cfg):defaults().cfg;
- if(source){old.start=nextCalendarMonth(old.start);old.people.forEach(p=>p.off=[]);}
+ if(source){normalizeOptional(old);old.start=nextCalendarMonth(old.start);old.people.forEach(p=>p.off=[]);}
  else{old.start=draft?nextCalendarMonth(draft.start):old.start;}
  const b=newBlockRecord(old);blocks.push(b);activeBlockId=b.id;draft=copy(b.cfg);current=null;workflow={locked:false,publishedId:null,versions:[]};
  save();hydrate();switchTab('settings');toast(source?'Next block created with settings copied; leave dates cleared.':'New independent block created.');
@@ -642,6 +747,40 @@ function detailsEditor(){
  const root=$('details-editor');
  root.innerHTML=draft.details.map((p,i)=>`<div class="detail-edit-row"><input aria-label="Details name ${i+1}" data-detail="${i}" data-detail-key="name" value="${h(p.name||'')}" placeholder="Dr. name"><input aria-label="Details role ${i+1}" data-detail="${i}" data-detail-key="role" value="${h(p.role||'')}" placeholder="Chief Intern"><input aria-label="Details contact ${i+1}" dir="ltr" type="tel" inputmode="tel" data-detail="${i}" data-detail-key="phone" value="${h(p.phone||'')}" placeholder="05xxxxxxxx"><button type="button" class="remove-person" data-detail-remove="${i}" title="Remove detail">×</button></div>`).join('');
 }
+function renderOptional(){
+ normalizeOptional(draft);
+ const lock=!!workflow.locked, groups=draft.optionalRules.groups,pairs=draft.optionalRules.pairs;
+ const doctors=draft.people, disabled=lock?'disabled':'';
+ const doctorsOpt=(selected,other)=>'<option value="">Select doctor</option>'+doctors.filter(p=>p.id!==other).map(p=>`<option value="${h(p.id)}" ${p.id===selected?'selected':''}>${h(p.name)}</option>`).join('');
+ $('optional-groups').innerHTML=groups.length?groups.map((g,i)=>`<div class="optional-group"><div class="optional-group-title"><strong>${h(g.label||g.code)} · ${h(g.code)} (${g.memberIds.length} doctors)</strong><button type="button" class="optional-danger" data-remove-group="${i}" ${disabled}>Remove group</button></div><div class="optional-doctors">${doctors.map(p=>`<label><input type="checkbox" data-group="${i}" data-doctor-id="${h(p.id)}" ${g.memberIds.includes(p.id)?'checked':''} ${disabled}><span>${h(p.name)}</span></label>`).join('')}</div></div>`).join(''):'<div class="optional-empty">No groups yet. Add a code like S and select the doctors who must not share a shift.</div>';
+ $('optional-pairs').innerHTML=pairs.length?pairs.map((p,i)=>`<div class="optional-pair"><label>Junior<select data-pair="${i}" data-pair-field="juniorId" ${disabled}>${doctorsOpt(p.juniorId,p.seniorId)}</select></label><label>Preferred Senior<select data-pair="${i}" data-pair-field="seniorId" ${disabled}>${doctorsOpt(p.seniorId,p.juniorId)}</select></label><button type="button" class="optional-danger" data-remove-pair="${i}" ${disabled}>Remove</button></div>`).join(''):'<div class="optional-empty">No preferred pairings. Pair a Junior with a Senior to prioritize working the same shift.</div>';
+ for(const id of ['optional-group-code','optional-group-label','optional-add-group','optional-add-pair'])$(id).disabled=lock;
+}
+function optionalChanged(){if(workflow.locked){toast('Unlock roster before changing optional rules.');return;}normalizeOptional(draft);markDirty();renderOptional();}
+function addOptionalGroup(){
+ if(workflow.locked)return;
+ const code=$('optional-group-code').value.trim().toUpperCase(),label=$('optional-group-label').value.trim();
+ if(!/^[A-Z0-9_-]{1,12}$/.test(code))return toast('Use a short English code, e.g. S or SENIOR.');
+ if(draft.optionalRules.groups.some(g=>g.code.toUpperCase()===code))return toast('Group code already exists.');
+ draft.optionalRules.groups.push({code,label:label||code,memberIds:[]});$('optional-group-code').value='';$('optional-group-label').value='';optionalChanged();
+}
+function addOptionalPair(){
+ if(workflow.locked)return;
+ if(draft.people.length<2)return toast('Add at least two doctors first.');
+ const already=new Set(draft.optionalRules.pairs.map(p=>p.juniorId));
+ const junior=draft.people.find(p=>!already.has(p.id))||draft.people[0];
+ const senior=draft.people.find(p=>p.id!==junior.id);
+ draft.optionalRules.pairs.push({juniorId:junior.id,seniorId:senior.id});optionalChanged();
+}
+function pairStats(cfg,result){
+ let achieved=0,bothWorked=0,linked=0;
+ for(const pair of (cfg.optionalRules?.pairs||[])){
+  const a=cfg.people.findIndex(p=>p.id===pair.juniorId),b=cfg.people.findIndex(p=>p.id===pair.seniorId);
+  if(a<0||b<0)continue;linked++;
+  for(const day of result?.dates||[]){const s=day.assignments[a],t=day.assignments[b];if(s!=='-'&&t!=='-'){bothWorked++;if(s===t)achieved++;}}
+ }
+ return {achieved,bothWorked,linked};
+}
 function renderDetails(){
  const panel=$('roster-details');
  if(!current){panel.hidden=true;panel.innerHTML='';return;}
@@ -650,7 +789,7 @@ function renderDetails(){
  panel.innerHTML=`<h3>Details</h3><div class="details-table-wrap"><table class="details-table"><thead><tr><th>Doctor name</th><th>Role</th><th>Contact number</th></tr></thead><tbody>${lines.length?lines.map(p=>`<tr><td>${h(p.name)}</td><td>${h(p.role)}</td><td dir="ltr">${h(p.phone)}</td></tr>`).join(''):'<tr><td colspan="3" class="muted">No contact details entered</td></tr>'}</tbody></table></div>`;
 }
 
-function hydrate(){ $('rosterTitle').value=draft.rosterTitle;$('minRestHours').value=String(draft.minRestHours);$('start').value=draft.start;$('days').value=String(draft.days);$('targetShifts').value=String(draft.targetShifts);$('maxConsec').value=String(draft.maxConsec);for(const sh of ['M','E','N']){$('cov'+sh).value=String(draft.coverage[sh]);$('start'+sh).value=draft.times[sh].start;$('end'+sh).value=draft.times[sh].end;}personEditor();detailsEditor();render();renderTargetPreview(); }
+function hydrate(){normalizeOptional(draft); $('rosterTitle').value=draft.rosterTitle;$('minRestHours').value=String(draft.minRestHours);$('start').value=draft.start;$('days').value=String(draft.days);$('targetShifts').value=String(draft.targetShifts);$('maxConsec').value=String(draft.maxConsec);for(const sh of ['M','E','N']){$('cov'+sh).value=String(draft.coverage[sh]);$('start'+sh).value=draft.times[sh].start;$('end'+sh).value=draft.times[sh].end;}personEditor();detailsEditor();renderOptional();render();renderTargetPreview(); }
 function readSettings(){draft.rosterTitle=$('rosterTitle').value.trim();draft.minRestHours=Number($('minRestHours').value);draft.start=$('start').value;draft.days=Number($('days').value);draft.targetShifts=Number($('targetShifts').value);draft.maxConsec=Number($('maxConsec').value);for(const sh of ['M','E','N']){draft.coverage[sh]=Number($('cov'+sh).value);draft.times[sh]={start:$('start'+sh).value,end:$('end'+sh).value};}}
 function renderTargetPreview(){const el=$('target-preview'),minimum=(draft.coverage.M+draft.coverage.E+draft.coverage.N)*draft.days,goal=draft.people.length*draft.targetShifts;
  el.classList.toggle('mismatch',goal<minimum);el.textContent=`Doctor goal: ${goal} shifts (${draft.targetShifts} × ${draft.people.length}) · Minimum coverage: ${minimum}. `+(goal>minimum?`✓ The scheduler can allocate ${goal-minimum} additional shifts above daily minima to meet doctors' targets.`:goal===minimum?'✓ Targets and daily minimums match.':`⚠️ At least ${minimum-goal} daily minimum slots cannot be covered without exceeding doctors' shift targets.`);
@@ -658,7 +797,7 @@ function renderTargetPreview(){const el=$('target-preview'),minimum=(draft.cover
 
 function parseOff(str){return [...new Set(str.split(/[\s,،;]+/g).map(x=>x.trim()).filter(Boolean))].sort()}
 function markDirty(){if(workflow.locked){toast('Unlock roster before editing settings.');return;}workflow.publishedId=null;current=null;$('generation-status').textContent='تم تعديل الإعدادات. ولّد جدولًا جديدًا.';save();render();renderTargetPreview();}
-function addPerson(){if(workflow.locked)return toast('Unlock roster before editing.');const input=$('new-person'),name=input.value.trim();if(!name){toast('أدخل اسم الطبيب أولًا');return}if(draft.people.length>=40){toast('الحد الحالي 40 طبيبًا');return}if(draft.people.some(p=>p.name.toLowerCase()===name.toLowerCase())){toast('الاسم موجود مسبقًا');return}draft.people.push({name,phone:'',off:[]});input.value='';personEditor();markDirty()}
+function addPerson(){if(workflow.locked)return toast('Unlock roster before editing.');const input=$('new-person'),name=input.value.trim();if(!name){toast('أدخل اسم الطبيب أولًا');return}if(draft.people.length>=40){toast('الحد الحالي 40 طبيبًا');return}if(draft.people.some(p=>p.name.toLowerCase()===name.toLowerCase())){toast('الاسم موجود مسبقًا');return}draft.people.push({id:doctorId(),name,phone:'',off:[]});input.value='';personEditor();renderOptional();markDirty()}
 function generate(){if(workflow.locked)return toast('Unlock roster before regenerating.');readSettings();const error=G.validInput(draft);if(error){$('generation-status').textContent='⚠️ '+error;toast(error);return}const btn=$('generate');btn.disabled=true;btn.textContent='⏳ يجري توزيع المناوبات...';$('generation-status').textContent='جاري حساب التغطية والإحصائيات.';
  setTimeout(()=>{
   try{let res=G.generate(draft,{seed:Date.now()%2147483647});if(!res.ok){toast(res.error);$('generation-status').textContent='⚠️ '+res.error;return}const errs=G.audit(draft,res);if(errs.length){toast('تم إيقاف الجدول بسبب تعارض في الفحص.');$('generation-status').textContent='تعارض: '+errs.slice(0,2).join(', ');return}current=res;current.manualShifts={};current.extraShifts={};workflow.publishedId=null;workflow.locked=false;save();const planned=draft.days*(draft.coverage.M+draft.coverage.E+draft.coverage.N),filled=res.counts.reduce((a,x)=>a+x.all,0);$('generation-status').textContent=(res.shortCoverage||res.belowTarget)?`⚠️ Generated ${res.dates.length} days · ${res.shortCoverage||0} coverage gaps · ${res.belowTarget||0} shifts below doctor targets.`:`✅ Generated ${res.dates.length} days · ${filled} shifts · all doctors reached their ${draft.targetShifts}-shift target.`;render();switchTab('roster')}catch(e){$('generation-status').textContent='خطأ غير متوقع: '+e.message;toast('لم ينجح التوليد');}finally{btn.disabled=false;btn.textContent='⚡ توليد الجدول تلقائيًا'}
@@ -689,7 +828,8 @@ function renderRoster(){
  let missing=0,extra=0,affectedDays=0;
  for(const day of dates){let different=false;for(const t of ['M','E','N']){const found=day.assignments.filter(x=>x===t).length,expected=draft.coverage[t];missing+=Math.max(0,expected-found);extra+=Math.max(0,found-expected);if(found!==expected)different=true;}if(different)affectedDays++;}
  const overLimit=draft.people.map((p,i)=>({name:p.name,count:dates.filter(d=>isShift(d.assignments[i])).length})).filter(p=>p.count>draft.targetShifts);
- alert.innerHTML=(errs.length?`<div class="alert">⚠️ Safety conflicts: ${h(errs.slice(0,4).join(' / '))}</div>`:'<div class="success-note">✓ Rest and leave checks passed.</div>')+(missing?`<div class="alert">⚠️ UNFILLED SHIFTS: ${missing} (${affectedDays} affected days). Review coverage before approval.</div>`:'')+(extra?`<div class="success-note">✓ ABOVE DAILY MINIMUM: ${extra} doctor shifts (automatic or manual) were assigned to meet workloads.</div>`:'')+(overLimit.length?`<div class="alert">⚠️ OVER TARGET (existing or manual changes): ${h(overLimit.map(p=>p.name+' '+p.count+'/'+draft.targetShifts).join(', '))}</div>`:'');
+ const pref=pairStats(draft,current);
+ alert.innerHTML=(pref.linked?`<div class="success-note">Preferred Junior/Senior matches: ${pref.achieved} paired shifts · ${pref.linked} requested pair(s). Soft priority, not guaranteed.</div>`:'')+(errs.length?`<div class="alert">⚠️ Safety conflicts: ${h(errs.slice(0,4).join(' / '))}</div>`:'<div class="success-note">✓ Rest and leave checks passed.</div>')+(missing?`<div class="alert">⚠️ UNFILLED SHIFTS: ${missing} (${affectedDays} affected days). Review coverage before approval.</div>`:'')+(extra?`<div class="success-note">✓ ABOVE DAILY MINIMUM: ${extra} doctor shifts (automatic or manual) were assigned to meet workloads.</div>`:'')+(overLimit.length?`<div class="alert">⚠️ OVER TARGET (existing or manual changes): ${h(overLimit.map(p=>p.name+' '+p.count+'/'+draft.targetShifts).join(', '))}</div>`:'');
 
  const peopleIds=draft.people.map((_,i)=>i).filter(i=>filter.value==='all'||i===Number(filter.value));
  const legend=[['M','M','Morning'],['E','E','Evening'],['N','N','Night'],['MANUAL','+','Extra shift'],['LEAVE','L','Leave'],['OFF','–','Off']].map(([t,code,desc])=>`<span class="legend-item"><span class="legend-swatch ${t}">${code}</span> ${desc}</span>`).join('');
@@ -762,7 +902,7 @@ function renderWorkflow(){
  $('new-person').disabled=!!workflow.locked;
  ['rosterTitle','minRestHours','start','days','targetShifts','maxConsec','covM','covE','covN','startM','endM','startE','endE','startN','endN'].forEach(id=>$(id).disabled=!!workflow.locked);
  document.querySelectorAll('.person-name,.person-phone,.off-dates,.remove-person,.detail-edit-row input').forEach(el=>el.disabled=!!workflow.locked);
- $('add-detail').disabled=!!workflow.locked;
+  $('add-detail').disabled=!!workflow.locked;renderOptional();
  renderHistory();
 }
 function lockRoster(){
@@ -813,7 +953,8 @@ function versionAction(e){
  }
 }
 function renderReport(){const root=$('report-content');if(!current){root.innerHTML='<div class="empty">أنشئ الجدول لعرض ملخص المناوبات.</div>';return}recount();const c=current.counts;const total=c.reduce((a,x)=>a+x.all,0),hours=c.reduce((a,x)=>a+x.hours,0),v=(key)=>{const n=c.map(i=>i[key]);return `${Math.min(...n)}–${Math.max(...n)}`};const errs=G.audit(draft,current);
- root.innerHTML=`<div class="numbers-grid"><div class="metric"><span class="value">${total}</span><span class="desc">إجمالي المناوبات</span></div><div class="metric"><span class="value">${hours}</span><span class="desc">إجمالي الساعات</span></div><div class="metric"><span class="value">${v('N')}</span><span class="desc">الليالي لكل شخص</span></div><div class="metric"><span class="value">${errs.length===0?'✓':errs.length}</span><span class="desc">${errs.length?'تعارضات تحتاج مراجعة':'لا تعارضات مكتشفة'}</span></div></div><div class="table-wrap"><table><thead><tr><th>الطبيب</th><th>Morning</th><th>Evening</th><th>Night</th><th>الويكند</th><th>Leave</th><th>Extra</th><th>كل الشفتات</th><th>المطلوب</th><th>الفرق</th><th>ساعات</th></tr></thead><tbody>${c.map((p,i)=>`<tr><td>${h(p.name)}</td><td>${p.M}</td><td>${p.E}</td><td>${p.N}</td><td>${p.wknd}</td><td>${current.dates.filter(d=>leaveDay(d.date,i)).length}</td><td>${current.dates.filter(d=>isExtraShift(d,i)).length}</td><td><b>${p.all}</b></td><td>${draft.targetShifts||'غير محدد'}</td><td class="difference ${p.all===draft.targetShifts?'exact':p.all>draft.targetShifts?'over':'under'}">${draft.targetShifts>0?(p.all>draft.targetShifts?'+':'')+(p.all-draft.targetShifts):'—'}</td><td>${p.hours}</td></tr>`).join('')}</tbody></table></div><p class="fair-note">المدى بين الموظفين: إجمالي الشفتات <b>${v('all')}</b>، ليالي <b>${v('N')}</b>، ويكند <b>${v('wknd')}</b>. تُحتسب الجمعة والسبت ويكند. الهدف لكل طبيب ${draft.targetShifts} شفت، ومدة كل شفت 8 ساعات. هذا التقرير يختبر التوزيع الحسابي ولا يحل محل مراجعة سياسات المستشفى.</p>`;
+  const pref=pairStats(draft,current);
+  root.innerHTML=`${pref.linked?`<div class="success-note">Preferred pairing: ${pref.achieved} matched shifts, ${pref.bothWorked} days where both worked, ${pref.linked} requested pair(s).</div>`: ''}<div class="numbers-grid"><div class="metric"><span class="value">${total}</span><span class="desc">إجمالي المناوبات</span></div><div class="metric"><span class="value">${hours}</span><span class="desc">إجمالي الساعات</span></div><div class="metric"><span class="value">${v('N')}</span><span class="desc">الليالي لكل شخص</span></div><div class="metric"><span class="value">${errs.length===0?'✓':errs.length}</span><span class="desc">${errs.length?'تعارضات تحتاج مراجعة':'لا تعارضات مكتشفة'}</span></div></div><div class="table-wrap"><table><thead><tr><th>الطبيب</th><th>Morning</th><th>Evening</th><th>Night</th><th>الويكند</th><th>Leave</th><th>Extra</th><th>كل الشفتات</th><th>المطلوب</th><th>الفرق</th><th>ساعات</th></tr></thead><tbody>${c.map((p,i)=>`<tr><td>${h(p.name)}</td><td>${p.M}</td><td>${p.E}</td><td>${p.N}</td><td>${p.wknd}</td><td>${current.dates.filter(d=>leaveDay(d.date,i)).length}</td><td>${current.dates.filter(d=>isExtraShift(d,i)).length}</td><td><b>${p.all}</b></td><td>${draft.targetShifts||'غير محدد'}</td><td class="difference ${p.all===draft.targetShifts?'exact':p.all>draft.targetShifts?'over':'under'}">${draft.targetShifts>0?(p.all>draft.targetShifts?'+':'')+(p.all-draft.targetShifts):'—'}</td><td>${p.hours}</td></tr>`).join('')}</tbody></table></div><p class="fair-note">المدى بين الموظفين: إجمالي الشفتات <b>${v('all')}</b>، ليالي <b>${v('N')}</b>، ويكند <b>${v('wknd')}</b>. تُحتسب الجمعة والسبت ويكند. الهدف لكل طبيب ${draft.targetShifts} شفت، ومدة كل شفت 8 ساعات. هذا التقرير يختبر التوزيع الحسابي ولا يحل محل مراجعة سياسات المستشفى.</p>`;
 }
 function renderPersonal(){
  const sel=$('selected-person'),root=$('personal-content'),old=Number(sel.value)||0;
@@ -1005,7 +1146,7 @@ function exportMatrix(){
 function exportDaily(){if(!current){toast('أنشئ الجدول أولًا');return}let rows=[['Date','Weekday','Shift','Start','End','Doctor','Contact number']];for(const day of current.dates)for(const typ of ['M','E','N'])day.assignments.forEach((x,i)=>{if(x===typ)rows.push([day.date,arabicDate(day.date),typ,draft.times[typ].start,draft.times[typ].end,draft.people[i].name,draft.people[i].phone||''])});downloadFile(`ED_Roster_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
 function exportReport(){if(!current){toast('أنشئ الجدول أولًا');return}recount();const rows=[['Doctor','Morning','Evening','Night','Weekend','Leave','Extra','All shifts','Target shifts','Difference','Hours'],...current.counts.map((p,i)=>[p.name,p.M,p.E,p.N,p.wknd,current.dates.filter(d=>leaveDay(d.date,i)).length,current.dates.filter(d=>isExtraShift(d,i)).length,p.all,draft.targetShifts,p.all-draft.targetShifts,p.hours])];downloadFile(`ED_Statistics_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
 function exportBackup(){readSettings();downloadFile(`ED_Scheduler_Backup_${draft.start}.json`,JSON.stringify({cfg:draft,result:current,workflow,version:2},null,2),'application/json')}
-function restoreBackup(file){const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!data.cfg||!Array.isArray(data.cfg.people))throw Error('invalid');const defaultCfg=defaults().cfg;data.cfg.targetShifts??=16;data.cfg.minRestHours??=11;data.cfg.rosterTitle??='Emergency Department Duty Roster';data.cfg.details??=[{name:'',role:'',phone:''}];data.cfg.people.forEach(p=>p.phone??='');data.cfg.times??=defaultCfg.times;for(const t of ['M','E','N'])data.cfg.times[t]??=defaultCfg.times[t];const error=G.validInput(data.cfg);if(error)throw Error(error);draft=data.cfg;current=data.result||null;migrateExtraShifts(current,draft);workflow={locked:!!data.workflow?.locked,publishedId:data.workflow?.publishedId||null,versions:Array.isArray(data.workflow?.versions)?data.workflow.versions:[]};if(current&&(!Array.isArray(current.dates)||current.dates.length!==draft.days||G.audit(draft,current).length))current=null;save();hydrate();toast('تم استيراد النسخة بنجاح')}catch(err){toast('نسخة غير صالحة: '+(err.message||''))}};reader.readAsText(file)}
+function restoreBackup(file){const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!data.cfg||!Array.isArray(data.cfg.people))throw Error('invalid');const defaultCfg=defaults().cfg;data.cfg.targetShifts??=16;data.cfg.minRestHours??=11;data.cfg.rosterTitle??='Emergency Department Duty Roster';data.cfg.details??=[{name:'',role:'',phone:''}];data.cfg.people.forEach(p=>p.phone??='');normalizeOptional(data.cfg);data.cfg.times??=defaultCfg.times;for(const t of ['M','E','N'])data.cfg.times[t]??=defaultCfg.times[t];const error=G.validInput(data.cfg);if(error)throw Error(error);draft=data.cfg;current=data.result||null;migrateExtraShifts(current,draft);workflow={locked:!!data.workflow?.locked,publishedId:data.workflow?.publishedId||null,versions:Array.isArray(data.workflow?.versions)?data.workflow.versions:[]};if(current&&(!Array.isArray(current.dates)||current.dates.length!==draft.days||G.audit(draft,current).length))current=null;save();hydrate();toast('تم استيراد النسخة بنجاح')}catch(err){toast('نسخة غير صالحة: '+(err.message||''))}};reader.readAsText(file)}
 function init(){const initial=load();draft=initial.cfg;current=initial.result;loadArchive();migrateExtraShifts(current,draft);if(current){try{if(!Array.isArray(current.dates)||current.dates.length!==draft.days||G.audit(draft,current).length)current=null}catch(_e){current=null}}hydrate();
  document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tab)));
   $('archive-save').addEventListener('click',()=>{save();renderBlocks();toast('Active block saved.');});
@@ -1029,8 +1170,13 @@ function init(){const initial=load();draft=initial.cfg;current=initial.result;lo
  $('people-editor').addEventListener('input',(e)=>{const ip=e.target;if(ip.classList.contains('person-name')){draft.people[+ip.dataset.person].name=ip.value;markDirty()}else if(ip.classList.contains('off-dates')){draft.people[+ip.dataset.off].off=parseOff(ip.value);markDirty()}else if(ip.classList.contains('person-phone')){draft.people[+ip.dataset.phone].phone=ip.value;workflow.publishedId=null;save();render();}});
  $('details-editor').addEventListener('input',e=>{const field=e.target.closest('input[data-detail]');if(!field||workflow.locked)return;draft.details[+field.dataset.detail][field.dataset.detailKey]=field.value;workflow.publishedId=null;save();renderDetails()});
  $('details-editor').addEventListener('click',e=>{const btn=e.target.closest('[data-detail-remove]');if(!btn||workflow.locked)return;draft.details.splice(+btn.dataset.detailRemove,1);workflow.publishedId=null;detailsEditor();save();renderDetails()});
+ $('optional-add-group').addEventListener('click',addOptionalGroup);$('optional-add-pair').addEventListener('click',addOptionalPair);
+ $('optional-groups').addEventListener('change',e=>{const f=e.target.closest('input[data-group][data-doctor-id]');if(!f||workflow.locked)return;const g=draft.optionalRules.groups[+f.dataset.group];if(!g)return;g.memberIds=f.checked?[...new Set([...g.memberIds,f.dataset.doctorId])]:g.memberIds.filter(x=>x!==f.dataset.doctorId);optionalChanged();});
+ $('optional-groups').addEventListener('click',e=>{const b=e.target.closest('[data-remove-group]');if(!b||workflow.locked)return;draft.optionalRules.groups.splice(+b.dataset.removeGroup,1);optionalChanged();});
+ $('optional-pairs').addEventListener('change',e=>{const f=e.target.closest('select[data-pair]');if(!f||workflow.locked)return;const p=draft.optionalRules.pairs[+f.dataset.pair];if(!p)return;if(!f.value||f.value===p[f.dataset.pairField==='juniorId'?'seniorId':'juniorId']){renderOptional();return toast('Choose two different doctors.');}if(f.dataset.pairField==='juniorId'&&draft.optionalRules.pairs.some((r,j)=>j!==+f.dataset.pair&&r.juniorId===f.value)){renderOptional();return toast('This junior already has a preferred senior.');}p[f.dataset.pairField]=f.value;optionalChanged();});
+ $('optional-pairs').addEventListener('click',e=>{const b=e.target.closest('[data-remove-pair]');if(!b||workflow.locked)return;draft.optionalRules.pairs.splice(+b.dataset.removePair,1);optionalChanged();});
  $('add-detail').addEventListener('click',()=>{if(workflow.locked)return;draft.details.push({name:'',role:'',phone:''});workflow.publishedId=null;detailsEditor();save();renderDetails()});
- $('people-editor').addEventListener('click',(e)=>{const del=e.target.closest('[data-remove]');if(!del)return;draft.people.splice(+del.dataset.remove,1);personEditor();markDirty()});
+ $('people-editor').addEventListener('click',(e)=>{const del=e.target.closest('[data-remove]');if(!del)return;draft.people.splice(+del.dataset.remove,1);normalizeOptional(draft);personEditor();renderOptional();markDirty()});
  $('add-person').addEventListener('click',addPerson);$('new-person').addEventListener('keydown',e=>{if(e.key==='Enter')addPerson()});
  $('lock-roster').addEventListener('click',lockRoster);$('unlock-roster').addEventListener('click',unlockRoster);$('publish-roster').addEventListener('click',publishRoster);$('publish-pdf').addEventListener('click',()=>edDirectPdf('roster'));$('version-history').addEventListener('click',versionAction);$('generate').addEventListener('click',generate);$('reset-sample').addEventListener('click',()=>{if(workflow.locked)return toast('Unlock first.');if(!confirm('ترجع بيانات المثال وتحذف الجدول الحالي من الجهاز؟'))return;let d=defaults();draft=d.cfg;current=null;workflow.publishedId=null;hydrate();save();toast('تمت استعادة المثال')});
  $('roster-content').addEventListener('change',(e)=>{if(!e.target.matches('select[data-day][data-grid-person]'))return;changeGridSlot(+e.target.dataset.day,+e.target.dataset.gridPerson,e.target.value)});
