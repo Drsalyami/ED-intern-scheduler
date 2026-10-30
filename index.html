@@ -6,6 +6,1255 @@
   <meta name="theme-color" content="#102841">
   <meta name="description" content="ED HMG: Emergency Schedule · جدول الطوارئ مقدم من د صالح اليامي">
   <title>Emergency Schedule | ED HMG · Dr Saleh Alyami</title>
+<script>
+/* Bundled QR encoder based on Kazuhiko Arase's MIT-licensed QRCode for JavaScript. */
+(function(){var modules={"QR8bitByte":function(require,module,exports){
+var QRMode = require('./QRMode');
+
+function QR8bitByte(data) {
+	this.mode = QRMode.MODE_8BIT_BYTE;
+	this.data = data;
+}
+
+QR8bitByte.prototype = {
+
+	getLength : function() {
+		return this.data.length;
+	},
+	
+	write : function(buffer) {
+		for (var i = 0; i < this.data.length; i++) {
+			// not JIS ...
+			buffer.put(this.data.charCodeAt(i), 8);
+		}
+	}
+};
+
+module.exports = QR8bitByte;
+
+},"QRBitBuffer":function(require,module,exports){
+function QRBitBuffer() {
+	this.buffer = [];
+	this.length = 0;
+}
+
+QRBitBuffer.prototype = {
+
+	get : function(index) {
+		var bufIndex = Math.floor(index / 8);
+		return ( (this.buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+	},
+	
+	put : function(num, length) {
+		for (var i = 0; i < length; i++) {
+			this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+		}
+	},
+	
+	getLengthInBits : function() {
+		return this.length;
+	},
+	
+	putBit : function(bit) {
+	
+		var bufIndex = Math.floor(this.length / 8);
+		if (this.buffer.length <= bufIndex) {
+			this.buffer.push(0);
+		}
+	
+		if (bit) {
+			this.buffer[bufIndex] |= (0x80 >>> (this.length % 8) );
+		}
+	
+		this.length++;
+	}
+};
+
+module.exports = QRBitBuffer;
+
+},"QRErrorCorrectLevel":function(require,module,exports){
+module.exports = {
+	L : 1,
+	M : 0,
+	Q : 3,
+	H : 2
+};
+
+
+},"QRMaskPattern":function(require,module,exports){
+module.exports = {
+	PATTERN000 : 0,
+	PATTERN001 : 1,
+	PATTERN010 : 2,
+	PATTERN011 : 3,
+	PATTERN100 : 4,
+	PATTERN101 : 5,
+	PATTERN110 : 6,
+	PATTERN111 : 7
+};
+
+},"QRMath":function(require,module,exports){
+var QRMath = {
+
+	glog : function(n) {
+	
+		if (n < 1) {
+			throw new Error("glog(" + n + ")");
+		}
+		
+		return QRMath.LOG_TABLE[n];
+	},
+	
+	gexp : function(n) {
+	
+		while (n < 0) {
+			n += 255;
+		}
+	
+		while (n >= 256) {
+			n -= 255;
+		}
+	
+		return QRMath.EXP_TABLE[n];
+	},
+	
+	EXP_TABLE : new Array(256),
+	
+	LOG_TABLE : new Array(256)
+
+};
+	
+for (var i = 0; i < 8; i++) {
+	QRMath.EXP_TABLE[i] = 1 << i;
+}
+for (var i = 8; i < 256; i++) {
+	QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4]
+		^ QRMath.EXP_TABLE[i - 5]
+		^ QRMath.EXP_TABLE[i - 6]
+		^ QRMath.EXP_TABLE[i - 8];
+}
+for (var i = 0; i < 255; i++) {
+	QRMath.LOG_TABLE[QRMath.EXP_TABLE[i] ] = i;
+}
+
+module.exports = QRMath;
+
+},"QRMode":function(require,module,exports){
+module.exports = {
+    MODE_NUMBER :       1 << 0,
+    MODE_ALPHA_NUM :    1 << 1,
+    MODE_8BIT_BYTE :    1 << 2,
+    MODE_KANJI :        1 << 3
+};
+
+},"QRPolynomial":function(require,module,exports){
+var QRMath = require('./QRMath');
+
+function QRPolynomial(num, shift) {
+	if (num.length === undefined) {
+		throw new Error(num.length + "/" + shift);
+	}
+
+	var offset = 0;
+
+	while (offset < num.length && num[offset] === 0) {
+		offset++;
+	}
+
+	this.num = new Array(num.length - offset + shift);
+	for (var i = 0; i < num.length - offset; i++) {
+		this.num[i] = num[i + offset];
+	}
+}
+
+QRPolynomial.prototype = {
+
+	get : function(index) {
+		return this.num[index];
+	},
+	
+	getLength : function() {
+		return this.num.length;
+	},
+	
+	multiply : function(e) {
+	
+		var num = new Array(this.getLength() + e.getLength() - 1);
+	
+		for (var i = 0; i < this.getLength(); i++) {
+			for (var j = 0; j < e.getLength(); j++) {
+				num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i) ) + QRMath.glog(e.get(j) ) );
+			}
+		}
+	
+		return new QRPolynomial(num, 0);
+	},
+	
+	mod : function(e) {
+	
+		if (this.getLength() - e.getLength() < 0) {
+			return this;
+		}
+	
+		var ratio = QRMath.glog(this.get(0) ) - QRMath.glog(e.get(0) );
+	
+		var num = new Array(this.getLength() );
+		
+		for (var i = 0; i < this.getLength(); i++) {
+			num[i] = this.get(i);
+		}
+		
+		for (var x = 0; x < e.getLength(); x++) {
+			num[x] ^= QRMath.gexp(QRMath.glog(e.get(x) ) + ratio);
+		}
+	
+		// recursive call
+		return new QRPolynomial(num, 0).mod(e);
+	}
+};
+
+module.exports = QRPolynomial;
+
+},"QRRSBlock":function(require,module,exports){
+var QRErrorCorrectLevel = require('./QRErrorCorrectLevel');
+
+function QRRSBlock(totalCount, dataCount) {
+	this.totalCount = totalCount;
+	this.dataCount  = dataCount;
+}
+
+QRRSBlock.RS_BLOCK_TABLE = [
+
+	// L
+	// M
+	// Q
+	// H
+
+	// 1
+	[1, 26, 19],
+	[1, 26, 16],
+	[1, 26, 13],
+	[1, 26, 9],
+	
+	// 2
+	[1, 44, 34],
+	[1, 44, 28],
+	[1, 44, 22],
+	[1, 44, 16],
+
+	// 3
+	[1, 70, 55],
+	[1, 70, 44],
+	[2, 35, 17],
+	[2, 35, 13],
+
+	// 4		
+	[1, 100, 80],
+	[2, 50, 32],
+	[2, 50, 24],
+	[4, 25, 9],
+	
+	// 5
+	[1, 134, 108],
+	[2, 67, 43],
+	[2, 33, 15, 2, 34, 16],
+	[2, 33, 11, 2, 34, 12],
+	
+	// 6
+	[2, 86, 68],
+	[4, 43, 27],
+	[4, 43, 19],
+	[4, 43, 15],
+	
+	// 7		
+	[2, 98, 78],
+	[4, 49, 31],
+	[2, 32, 14, 4, 33, 15],
+	[4, 39, 13, 1, 40, 14],
+	
+	// 8
+	[2, 121, 97],
+	[2, 60, 38, 2, 61, 39],
+	[4, 40, 18, 2, 41, 19],
+	[4, 40, 14, 2, 41, 15],
+	
+	// 9
+	[2, 146, 116],
+	[3, 58, 36, 2, 59, 37],
+	[4, 36, 16, 4, 37, 17],
+	[4, 36, 12, 4, 37, 13],
+	
+	// 10		
+	[2, 86, 68, 2, 87, 69],
+	[4, 69, 43, 1, 70, 44],
+	[6, 43, 19, 2, 44, 20],
+	[6, 43, 15, 2, 44, 16],
+
+	// 11
+	[4, 101, 81],
+	[1, 80, 50, 4, 81, 51],
+	[4, 50, 22, 4, 51, 23],
+	[3, 36, 12, 8, 37, 13],
+
+	// 12
+	[2, 116, 92, 2, 117, 93],
+	[6, 58, 36, 2, 59, 37],
+	[4, 46, 20, 6, 47, 21],
+	[7, 42, 14, 4, 43, 15],
+
+	// 13
+	[4, 133, 107],
+	[8, 59, 37, 1, 60, 38],
+	[8, 44, 20, 4, 45, 21],
+	[12, 33, 11, 4, 34, 12],
+
+	// 14
+	[3, 145, 115, 1, 146, 116],
+	[4, 64, 40, 5, 65, 41],
+	[11, 36, 16, 5, 37, 17],
+	[11, 36, 12, 5, 37, 13],
+
+	// 15
+	[5, 109, 87, 1, 110, 88],
+	[5, 65, 41, 5, 66, 42],
+	[5, 54, 24, 7, 55, 25],
+	[11, 36, 12],
+
+	// 16
+	[5, 122, 98, 1, 123, 99],
+	[7, 73, 45, 3, 74, 46],
+	[15, 43, 19, 2, 44, 20],
+	[3, 45, 15, 13, 46, 16],
+
+	// 17
+	[1, 135, 107, 5, 136, 108],
+	[10, 74, 46, 1, 75, 47],
+	[1, 50, 22, 15, 51, 23],
+	[2, 42, 14, 17, 43, 15],
+
+	// 18
+	[5, 150, 120, 1, 151, 121],
+	[9, 69, 43, 4, 70, 44],
+	[17, 50, 22, 1, 51, 23],
+	[2, 42, 14, 19, 43, 15],
+
+	// 19
+	[3, 141, 113, 4, 142, 114],
+	[3, 70, 44, 11, 71, 45],
+	[17, 47, 21, 4, 48, 22],
+	[9, 39, 13, 16, 40, 14],
+
+	// 20
+	[3, 135, 107, 5, 136, 108],
+	[3, 67, 41, 13, 68, 42],
+	[15, 54, 24, 5, 55, 25],
+	[15, 43, 15, 10, 44, 16],
+
+	// 21
+	[4, 144, 116, 4, 145, 117],
+	[17, 68, 42],
+	[17, 50, 22, 6, 51, 23],
+	[19, 46, 16, 6, 47, 17],
+
+	// 22
+	[2, 139, 111, 7, 140, 112],
+	[17, 74, 46],
+	[7, 54, 24, 16, 55, 25],
+	[34, 37, 13],
+
+	// 23
+	[4, 151, 121, 5, 152, 122],
+	[4, 75, 47, 14, 76, 48],
+	[11, 54, 24, 14, 55, 25],
+	[16, 45, 15, 14, 46, 16],
+
+	// 24
+	[6, 147, 117, 4, 148, 118],
+	[6, 73, 45, 14, 74, 46],
+	[11, 54, 24, 16, 55, 25],
+	[30, 46, 16, 2, 47, 17],
+
+	// 25
+	[8, 132, 106, 4, 133, 107],
+	[8, 75, 47, 13, 76, 48],
+	[7, 54, 24, 22, 55, 25],
+	[22, 45, 15, 13, 46, 16],
+
+	// 26
+	[10, 142, 114, 2, 143, 115],
+	[19, 74, 46, 4, 75, 47],
+	[28, 50, 22, 6, 51, 23],
+	[33, 46, 16, 4, 47, 17],
+
+	// 27
+	[8, 152, 122, 4, 153, 123],
+	[22, 73, 45, 3, 74, 46],
+	[8, 53, 23, 26, 54, 24],
+	[12, 45, 15, 28, 46, 16],
+
+	// 28
+	[3, 147, 117, 10, 148, 118],
+	[3, 73, 45, 23, 74, 46],
+	[4, 54, 24, 31, 55, 25],
+	[11, 45, 15, 31, 46, 16],
+
+	// 29
+	[7, 146, 116, 7, 147, 117],
+	[21, 73, 45, 7, 74, 46],
+	[1, 53, 23, 37, 54, 24],
+	[19, 45, 15, 26, 46, 16],
+
+	// 30
+	[5, 145, 115, 10, 146, 116],
+	[19, 75, 47, 10, 76, 48],
+	[15, 54, 24, 25, 55, 25],
+	[23, 45, 15, 25, 46, 16],
+
+	// 31
+	[13, 145, 115, 3, 146, 116],
+	[2, 74, 46, 29, 75, 47],
+	[42, 54, 24, 1, 55, 25],
+	[23, 45, 15, 28, 46, 16],
+
+	// 32
+	[17, 145, 115],
+	[10, 74, 46, 23, 75, 47],
+	[10, 54, 24, 35, 55, 25],
+	[19, 45, 15, 35, 46, 16],
+
+	// 33
+	[17, 145, 115, 1, 146, 116],
+	[14, 74, 46, 21, 75, 47],
+	[29, 54, 24, 19, 55, 25],
+	[11, 45, 15, 46, 46, 16],
+
+	// 34
+	[13, 145, 115, 6, 146, 116],
+	[14, 74, 46, 23, 75, 47],
+	[44, 54, 24, 7, 55, 25],
+	[59, 46, 16, 1, 47, 17],
+
+	// 35
+	[12, 151, 121, 7, 152, 122],
+	[12, 75, 47, 26, 76, 48],
+	[39, 54, 24, 14, 55, 25],
+	[22, 45, 15, 41, 46, 16],
+
+	// 36
+	[6, 151, 121, 14, 152, 122],
+	[6, 75, 47, 34, 76, 48],
+	[46, 54, 24, 10, 55, 25],
+	[2, 45, 15, 64, 46, 16],
+
+	// 37
+	[17, 152, 122, 4, 153, 123],
+	[29, 74, 46, 14, 75, 47],
+	[49, 54, 24, 10, 55, 25],
+	[24, 45, 15, 46, 46, 16],
+
+	// 38
+	[4, 152, 122, 18, 153, 123],
+	[13, 74, 46, 32, 75, 47],
+	[48, 54, 24, 14, 55, 25],
+	[42, 45, 15, 32, 46, 16],
+
+	// 39
+	[20, 147, 117, 4, 148, 118],
+	[40, 75, 47, 7, 76, 48],
+	[43, 54, 24, 22, 55, 25],
+	[10, 45, 15, 67, 46, 16],
+
+	// 40
+	[19, 148, 118, 6, 149, 119],
+	[18, 75, 47, 31, 76, 48],
+	[34, 54, 24, 34, 55, 25],
+	[20, 45, 15, 61, 46, 16]
+];
+
+QRRSBlock.getRSBlocks = function(typeNumber, errorCorrectLevel) {
+	
+	var rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel);
+	
+	if (rsBlock === undefined) {
+		throw new Error("bad rs block @ typeNumber:" + typeNumber + "/errorCorrectLevel:" + errorCorrectLevel);
+	}
+
+	var length = rsBlock.length / 3;
+	
+	var list = [];
+	
+	for (var i = 0; i < length; i++) {
+
+		var count = rsBlock[i * 3 + 0];
+		var totalCount = rsBlock[i * 3 + 1];
+		var dataCount  = rsBlock[i * 3 + 2];
+
+		for (var j = 0; j < count; j++) {
+			list.push(new QRRSBlock(totalCount, dataCount) );	
+		}
+	}
+	
+	return list;
+};
+
+QRRSBlock.getRsBlockTable = function(typeNumber, errorCorrectLevel) {
+
+	switch(errorCorrectLevel) {
+	case QRErrorCorrectLevel.L :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+	case QRErrorCorrectLevel.M :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+	case QRErrorCorrectLevel.Q :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+	case QRErrorCorrectLevel.H :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+	default :
+		return undefined;
+	}
+};
+
+module.exports = QRRSBlock;
+
+},"QRUtil":function(require,module,exports){
+var QRMode = require('./QRMode');
+var QRPolynomial = require('./QRPolynomial');
+var QRMath = require('./QRMath');
+var QRMaskPattern = require('./QRMaskPattern');
+
+var QRUtil = {
+
+    PATTERN_POSITION_TABLE : [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],        
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+    ],
+
+    G15 : (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
+    G18 : (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
+    G15_MASK : (1 << 14) | (1 << 12) | (1 << 10)    | (1 << 4) | (1 << 1),
+
+    getBCHTypeInfo : function(data) {
+        var d = data << 10;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
+            d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) ) );    
+        }
+        return ( (data << 10) | d) ^ QRUtil.G15_MASK;
+    },
+
+    getBCHTypeNumber : function(data) {
+        var d = data << 12;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
+            d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) ) );    
+        }
+        return (data << 12) | d;
+    },
+
+    getBCHDigit : function(data) {
+
+        var digit = 0;
+
+        while (data !== 0) {
+            digit++;
+            data >>>= 1;
+        }
+
+        return digit;
+    },
+
+    getPatternPosition : function(typeNumber) {
+        return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1];
+    },
+
+    getMask : function(maskPattern, i, j) {
+        
+        switch (maskPattern) {
+            
+        case QRMaskPattern.PATTERN000 : return (i + j) % 2 === 0;
+        case QRMaskPattern.PATTERN001 : return i % 2 === 0;
+        case QRMaskPattern.PATTERN010 : return j % 3 === 0;
+        case QRMaskPattern.PATTERN011 : return (i + j) % 3 === 0;
+        case QRMaskPattern.PATTERN100 : return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 === 0;
+        case QRMaskPattern.PATTERN101 : return (i * j) % 2 + (i * j) % 3 === 0;
+        case QRMaskPattern.PATTERN110 : return ( (i * j) % 2 + (i * j) % 3) % 2 === 0;
+        case QRMaskPattern.PATTERN111 : return ( (i * j) % 3 + (i + j) % 2) % 2 === 0;
+
+        default :
+            throw new Error("bad maskPattern:" + maskPattern);
+        }
+    },
+
+    getErrorCorrectPolynomial : function(errorCorrectLength) {
+
+        var a = new QRPolynomial([1], 0);
+
+        for (var i = 0; i < errorCorrectLength; i++) {
+            a = a.multiply(new QRPolynomial([1, QRMath.gexp(i)], 0) );
+        }
+
+        return a;
+    },
+
+    getLengthInBits : function(mode, type) {
+
+        if (1 <= type && type < 10) {
+
+            // 1 - 9
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 10;
+            case QRMode.MODE_ALPHA_NUM  : return 9;
+            case QRMode.MODE_8BIT_BYTE  : return 8;
+            case QRMode.MODE_KANJI      : return 8;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 27) {
+
+            // 10 - 26
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 12;
+            case QRMode.MODE_ALPHA_NUM  : return 11;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 10;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 41) {
+
+            // 27 - 40
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 14;
+            case QRMode.MODE_ALPHA_NUM  : return 13;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 12;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else {
+            throw new Error("type:" + type);
+        }
+    },
+
+    getLostPoint : function(qrCode) {
+        
+        var moduleCount = qrCode.getModuleCount();
+        var lostPoint = 0;
+        var row = 0; 
+        var col = 0;
+
+        
+        // LEVEL1
+        
+        for (row = 0; row < moduleCount; row++) {
+
+            for (col = 0; col < moduleCount; col++) {
+
+                var sameCount = 0;
+                var dark = qrCode.isDark(row, col);
+
+                for (var r = -1; r <= 1; r++) {
+
+                    if (row + r < 0 || moduleCount <= row + r) {
+                        continue;
+                    }
+
+                    for (var c = -1; c <= 1; c++) {
+
+                        if (col + c < 0 || moduleCount <= col + c) {
+                            continue;
+                        }
+
+                        if (r === 0 && c === 0) {
+                            continue;
+                        }
+
+                        if (dark === qrCode.isDark(row + r, col + c) ) {
+                            sameCount++;
+                        }
+                    }
+                }
+
+                if (sameCount > 5) {
+                    lostPoint += (3 + sameCount - 5);
+                }
+            }
+        }
+
+        // LEVEL2
+
+        for (row = 0; row < moduleCount - 1; row++) {
+            for (col = 0; col < moduleCount - 1; col++) {
+                var count = 0;
+                if (qrCode.isDark(row,     col    ) ) count++;
+                if (qrCode.isDark(row + 1, col    ) ) count++;
+                if (qrCode.isDark(row,     col + 1) ) count++;
+                if (qrCode.isDark(row + 1, col + 1) ) count++;
+                if (count === 0 || count === 4) {
+                    lostPoint += 3;
+                }
+            }
+        }
+
+        // LEVEL3
+
+        for (row = 0; row < moduleCount; row++) {
+            for (col = 0; col < moduleCount - 6; col++) {
+                if (qrCode.isDark(row, col) && 
+                        !qrCode.isDark(row, col + 1) && 
+                         qrCode.isDark(row, col + 2) && 
+                         qrCode.isDark(row, col + 3) && 
+                         qrCode.isDark(row, col + 4) && 
+                        !qrCode.isDark(row, col + 5) && 
+                         qrCode.isDark(row, col + 6) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount - 6; row++) {
+                if (qrCode.isDark(row, col) &&
+                        !qrCode.isDark(row + 1, col) &&
+                         qrCode.isDark(row + 2, col) &&
+                         qrCode.isDark(row + 3, col) &&
+                         qrCode.isDark(row + 4, col) &&
+                        !qrCode.isDark(row + 5, col) &&
+                         qrCode.isDark(row + 6, col) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        // LEVEL4
+        
+        var darkCount = 0;
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount; row++) {
+                if (qrCode.isDark(row, col) ) {
+                    darkCount++;
+                }
+            }
+        }
+        
+        var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+        lostPoint += ratio * 10;
+
+        return lostPoint;       
+    }
+
+};
+
+module.exports = QRUtil;
+
+},"index":function(require,module,exports){
+//---------------------------------------------------------------------
+// QRCode for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//   http://www.opensource.org/licenses/mit-license.php
+//
+// The word "QR Code" is registered trademark of 
+// DENSO WAVE INCORPORATED
+//   http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+// Modified to work in node for this project (and some refactoring)
+//---------------------------------------------------------------------
+
+var QR8bitByte = require('./QR8bitByte');
+var QRUtil = require('./QRUtil');
+var QRPolynomial = require('./QRPolynomial');
+var QRRSBlock = require('./QRRSBlock');
+var QRBitBuffer = require('./QRBitBuffer');
+
+function QRCode(typeNumber, errorCorrectLevel) {
+	this.typeNumber = typeNumber;
+	this.errorCorrectLevel = errorCorrectLevel;
+	this.modules = null;
+	this.moduleCount = 0;
+	this.dataCache = null;
+	this.dataList = [];
+}
+
+QRCode.prototype = {
+	
+	addData : function(data) {
+		var newData = new QR8bitByte(data);
+		this.dataList.push(newData);
+		this.dataCache = null;
+	},
+	
+	isDark : function(row, col) {
+		if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
+			throw new Error(row + "," + col);
+		}
+		return this.modules[row][col];
+	},
+
+	getModuleCount : function() {
+		return this.moduleCount;
+	},
+	
+	make : function() {
+		// Calculate automatically typeNumber if provided is < 1
+		if (this.typeNumber < 1 ){
+			var typeNumber = 1;
+			for (typeNumber = 1; typeNumber < 40; typeNumber++) {
+				var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, this.errorCorrectLevel);
+
+				var buffer = new QRBitBuffer();
+				var totalDataCount = 0;
+				for (var i = 0; i < rsBlocks.length; i++) {
+					totalDataCount += rsBlocks[i].dataCount;
+				}
+
+				for (var x = 0; x < this.dataList.length; x++) {
+					var data = this.dataList[x];
+					buffer.put(data.mode, 4);
+					buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+					data.write(buffer);
+				}
+				if (buffer.getLengthInBits() <= totalDataCount * 8)
+					break;
+			}
+			this.typeNumber = typeNumber;
+		}
+		this.makeImpl(false, this.getBestMaskPattern() );
+	},
+	
+	makeImpl : function(test, maskPattern) {
+		
+		this.moduleCount = this.typeNumber * 4 + 17;
+		this.modules = new Array(this.moduleCount);
+		
+		for (var row = 0; row < this.moduleCount; row++) {
+			
+			this.modules[row] = new Array(this.moduleCount);
+			
+			for (var col = 0; col < this.moduleCount; col++) {
+				this.modules[row][col] = null;//(col + row) % 3;
+			}
+		}
+	
+		this.setupPositionProbePattern(0, 0);
+		this.setupPositionProbePattern(this.moduleCount - 7, 0);
+		this.setupPositionProbePattern(0, this.moduleCount - 7);
+		this.setupPositionAdjustPattern();
+		this.setupTimingPattern();
+		this.setupTypeInfo(test, maskPattern);
+		
+		if (this.typeNumber >= 7) {
+			this.setupTypeNumber(test);
+		}
+	
+		if (this.dataCache === null) {
+			this.dataCache = QRCode.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+		}
+	
+		this.mapData(this.dataCache, maskPattern);
+	},
+
+	setupPositionProbePattern : function(row, col)  {
+		
+		for (var r = -1; r <= 7; r++) {
+			
+			if (row + r <= -1 || this.moduleCount <= row + r) continue;
+			
+			for (var c = -1; c <= 7; c++) {
+				
+				if (col + c <= -1 || this.moduleCount <= col + c) continue;
+				
+				if ( (0 <= r && r <= 6 && (c === 0 || c === 6) ) || 
+                     (0 <= c && c <= 6 && (r === 0 || r === 6) ) || 
+                     (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+					this.modules[row + r][col + c] = true;
+				} else {
+					this.modules[row + r][col + c] = false;
+				}
+			}		
+		}		
+	},
+	
+	getBestMaskPattern : function() {
+	
+		var minLostPoint = 0;
+		var pattern = 0;
+	
+		for (var i = 0; i < 8; i++) {
+			
+			this.makeImpl(true, i);
+	
+			var lostPoint = QRUtil.getLostPoint(this);
+	
+			if (i === 0 || minLostPoint >  lostPoint) {
+				minLostPoint = lostPoint;
+				pattern = i;
+			}
+		}
+	
+		return pattern;
+	},
+	
+	createMovieClip : function(target_mc, instance_name, depth) {
+	
+		var qr_mc = target_mc.createEmptyMovieClip(instance_name, depth);
+		var cs = 1;
+	
+		this.make();
+
+		for (var row = 0; row < this.modules.length; row++) {
+			
+			var y = row * cs;
+			
+			for (var col = 0; col < this.modules[row].length; col++) {
+	
+				var x = col * cs;
+				var dark = this.modules[row][col];
+			
+				if (dark) {
+					qr_mc.beginFill(0, 100);
+					qr_mc.moveTo(x, y);
+					qr_mc.lineTo(x + cs, y);
+					qr_mc.lineTo(x + cs, y + cs);
+					qr_mc.lineTo(x, y + cs);
+					qr_mc.endFill();
+				}
+			}
+		}
+		
+		return qr_mc;
+	},
+
+	setupTimingPattern : function() {
+		
+		for (var r = 8; r < this.moduleCount - 8; r++) {
+			if (this.modules[r][6] !== null) {
+				continue;
+			}
+			this.modules[r][6] = (r % 2 === 0);
+		}
+	
+		for (var c = 8; c < this.moduleCount - 8; c++) {
+			if (this.modules[6][c] !== null) {
+				continue;
+			}
+			this.modules[6][c] = (c % 2 === 0);
+		}
+	},
+	
+	setupPositionAdjustPattern : function() {
+	
+		var pos = QRUtil.getPatternPosition(this.typeNumber);
+		
+		for (var i = 0; i < pos.length; i++) {
+		
+			for (var j = 0; j < pos.length; j++) {
+			
+				var row = pos[i];
+				var col = pos[j];
+				
+				if (this.modules[row][col] !== null) {
+					continue;
+				}
+				
+				for (var r = -2; r <= 2; r++) {
+				
+					for (var c = -2; c <= 2; c++) {
+					
+						if (Math.abs(r) === 2 || 
+                            Math.abs(c) === 2 ||
+                            (r === 0 && c === 0) ) {
+							this.modules[row + r][col + c] = true;
+						} else {
+							this.modules[row + r][col + c] = false;
+						}
+					}
+				}
+			}
+		}
+	},
+	
+	setupTypeNumber : function(test) {
+	
+		var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
+        var mod;
+	
+		for (var i = 0; i < 18; i++) {
+			mod = (!test && ( (bits >> i) & 1) === 1);
+			this.modules[Math.floor(i / 3)][i % 3 + this.moduleCount - 8 - 3] = mod;
+		}
+	
+		for (var x = 0; x < 18; x++) {
+			mod = (!test && ( (bits >> x) & 1) === 1);
+			this.modules[x % 3 + this.moduleCount - 8 - 3][Math.floor(x / 3)] = mod;
+		}
+	},
+	
+	setupTypeInfo : function(test, maskPattern) {
+	
+		var data = (this.errorCorrectLevel << 3) | maskPattern;
+		var bits = QRUtil.getBCHTypeInfo(data);
+        var mod;
+	
+		// vertical		
+		for (var v = 0; v < 15; v++) {
+	
+			mod = (!test && ( (bits >> v) & 1) === 1);
+	
+			if (v < 6) {
+				this.modules[v][8] = mod;
+			} else if (v < 8) {
+				this.modules[v + 1][8] = mod;
+			} else {
+				this.modules[this.moduleCount - 15 + v][8] = mod;
+			}
+		}
+	
+		// horizontal
+		for (var h = 0; h < 15; h++) {
+	
+			mod = (!test && ( (bits >> h) & 1) === 1);
+			
+			if (h < 8) {
+				this.modules[8][this.moduleCount - h - 1] = mod;
+			} else if (h < 9) {
+				this.modules[8][15 - h - 1 + 1] = mod;
+			} else {
+				this.modules[8][15 - h - 1] = mod;
+			}
+		}
+	
+		// fixed module
+		this.modules[this.moduleCount - 8][8] = (!test);
+	
+	},
+	
+	mapData : function(data, maskPattern) {
+		
+		var inc = -1;
+		var row = this.moduleCount - 1;
+		var bitIndex = 7;
+		var byteIndex = 0;
+		
+		for (var col = this.moduleCount - 1; col > 0; col -= 2) {
+	
+			if (col === 6) col--;
+	
+			while (true) {
+	
+				for (var c = 0; c < 2; c++) {
+					
+					if (this.modules[row][col - c] === null) {
+						
+						var dark = false;
+	
+						if (byteIndex < data.length) {
+							dark = ( ( (data[byteIndex] >>> bitIndex) & 1) === 1);
+						}
+	
+						var mask = QRUtil.getMask(maskPattern, row, col - c);
+	
+						if (mask) {
+							dark = !dark;
+						}
+						
+						this.modules[row][col - c] = dark;
+						bitIndex--;
+	
+						if (bitIndex === -1) {
+							byteIndex++;
+							bitIndex = 7;
+						}
+					}
+				}
+								
+				row += inc;
+	
+				if (row < 0 || this.moduleCount <= row) {
+					row -= inc;
+					inc = -inc;
+					break;
+				}
+			}
+		}
+		
+	}
+
+};
+
+QRCode.PAD0 = 0xEC;
+QRCode.PAD1 = 0x11;
+
+QRCode.createData = function(typeNumber, errorCorrectLevel, dataList) {
+	
+	var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
+	
+	var buffer = new QRBitBuffer();
+	
+	for (var i = 0; i < dataList.length; i++) {
+		var data = dataList[i];
+		buffer.put(data.mode, 4);
+		buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+		data.write(buffer);
+	}
+
+	// calc num max data.
+	var totalDataCount = 0;
+	for (var x = 0; x < rsBlocks.length; x++) {
+		totalDataCount += rsBlocks[x].dataCount;
+	}
+
+	if (buffer.getLengthInBits() > totalDataCount * 8) {
+		throw new Error("code length overflow. (" + 
+            buffer.getLengthInBits() + 
+            ">" +  
+            totalDataCount * 8 + 
+            ")");
+	}
+
+	// end code
+	if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+		buffer.put(0, 4);
+	}
+
+	// padding
+	while (buffer.getLengthInBits() % 8 !== 0) {
+		buffer.putBit(false);
+	}
+
+	// padding
+	while (true) {
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD0, 8);
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD1, 8);
+	}
+
+	return QRCode.createBytes(buffer, rsBlocks);
+};
+
+QRCode.createBytes = function(buffer, rsBlocks) {
+
+	var offset = 0;
+	
+	var maxDcCount = 0;
+	var maxEcCount = 0;
+	
+	var dcdata = new Array(rsBlocks.length);
+	var ecdata = new Array(rsBlocks.length);
+	
+	for (var r = 0; r < rsBlocks.length; r++) {
+
+		var dcCount = rsBlocks[r].dataCount;
+		var ecCount = rsBlocks[r].totalCount - dcCount;
+
+		maxDcCount = Math.max(maxDcCount, dcCount);
+		maxEcCount = Math.max(maxEcCount, ecCount);
+		
+		dcdata[r] = new Array(dcCount);
+		
+		for (var i = 0; i < dcdata[r].length; i++) {
+			dcdata[r][i] = 0xff & buffer.buffer[i + offset];
+		}
+		offset += dcCount;
+		
+		var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+		var rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+		var modPoly = rawPoly.mod(rsPoly);
+		ecdata[r] = new Array(rsPoly.getLength() - 1);
+		for (var x = 0; x < ecdata[r].length; x++) {
+            var modIndex = x + modPoly.getLength() - ecdata[r].length;
+			ecdata[r][x] = (modIndex >= 0)? modPoly.get(modIndex) : 0;
+		}
+
+	}
+	
+	var totalCodeCount = 0;
+	for (var y = 0; y < rsBlocks.length; y++) {
+		totalCodeCount += rsBlocks[y].totalCount;
+	}
+
+	var data = new Array(totalCodeCount);
+	var index = 0;
+
+	for (var z = 0; z < maxDcCount; z++) {
+		for (var s = 0; s < rsBlocks.length; s++) {
+			if (z < dcdata[s].length) {
+				data[index++] = dcdata[s][z];
+			}
+		}
+	}
+
+	for (var xx = 0; xx < maxEcCount; xx++) {
+		for (var t = 0; t < rsBlocks.length; t++) {
+			if (xx < ecdata[t].length) {
+				data[index++] = ecdata[t][xx];
+			}
+		}
+	}
+
+	return data;
+
+};
+
+module.exports = QRCode;
+
+}},cache={};function local(name){name=name.replace(/^\.\//,'');if(!cache[name]){var m={exports:{}};cache[name]=m;modules[name](local,m,m.exports)}return cache[name].exports}window.EDQRCode=local('index');})();
+</script>
 <script src="./cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -199,6 +1448,8 @@ html.cloud-configured:not(.cloud-ready) .shell{visibility:hidden}
 body.cloud-viewer #view-settings input,body.cloud-viewer #view-settings select,body.cloud-viewer #view-settings button,body.cloud-viewer #view-roster .roster-matrix select,body.cloud-viewer #view-roster .workflow-actions button,body.cloud-viewer #view-roster .history-actions button,body.cloud-viewer #view-blocks .archive-buttons button,body.cloud-viewer #view-blocks .archive-card-actions button{pointer-events:none!important;opacity:.5!important}
 body.cloud-viewer #view-blocks .archive-card-actions [data-open-block]{pointer-events:auto!important;opacity:1!important}
 @media print{.cloud-gate,#view-cloud,.cloud-feedback{display:none!important}}
+
+.qr-list{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;direction:ltr}.qr-entry{display:flex;flex-direction:column;align-items:center;gap:5px;max-width:180px;text-align:center;overflow-wrap:anywhere}.qr-entry canvas{width:128px;height:128px;border:5px solid white;background:white;image-rendering:pixelated}.qr-edit-row{display:grid;grid-template-columns:1fr 2fr auto;gap:8px;margin:8px 0}.qr-edit-row input{min-width:0;padding:10px;border:1px solid #dce5ef;border-radius:8px}@media(max-width:520px){.qr-edit-row{grid-template-columns:1fr 1fr}.qr-edit-row button{grid-column:span 2}}
 </style>
 
 </head>
@@ -207,7 +1458,7 @@ body.cloud-viewer #view-blocks .archive-card-actions [data-open-block]{pointer-e
  <header class="main-header no-print">
   <div class="brand-icon" aria-hidden="true">✚</div>
   <div><p class="eyebrow">ED HMG</p><h1>Emergency Schedule</h1><p class="heading-sub">موقع خاص</p></div>
-  <div class="header-chip">نسخة 2.0</div>
+  <div class="header-chip">نسخة 2.1</div>
  </header>
  <section class="intro no-print">
   <span class="glow"></span>
@@ -268,6 +1519,7 @@ body.cloud-viewer #view-blocks .archive-card-actions [data-open-block]{pointer-e
      <div class="field-grid">
       <label class="field">عنوان الجدول<input type="text" id="rosterTitle" maxlength="120" value="Emergency Department Duty Roster" placeholder="Example: ED Rotation - Block 01"></label>
       <label class="field">بداية البلوك<input type="date" id="start" value="2026-11-01"></label>
+      <label class="field" style="justify-content:center;gap:9px">تقسيم الشفتات حسب المنطقة (Resuscitation / Acute)<input id="splitAreas" type="checkbox" style="width:23px;height:23px;align-self:center"></label>
       <label class="field">عدد الأيام (حدده بنفسك)<input type="number" inputmode="numeric" id="days" min="1" value="28" placeholder="مثال: 28"></label>
       <label class="field">عدد الشفتات المطلوبة لكل متدرب<input type="number" inputmode="numeric" id="targetShifts" min="1" value="16"></label><label class="field">أقصى أيام عمل متتالية<input type="number" id="maxConsec" min="1" max="14" value="5"></label>
       <label class="field">أقل وقت راحة بين الشفتات (بالساعات)<input type="number" inputmode="decimal" id="minRestHours" min="0" max="24" step="0.5" value="11"></label>
@@ -307,6 +1559,12 @@ body.cloud-viewer #view-blocks .archive-card-actions [data-open-block]{pointer-e
     <div id="optional-pairs"></div><button type="button" class="btn light" id="optional-add-pair">+ Add preferred pair</button>
     <p class="muted small">يحفظ التطبيق هذه الخيارات ضمن البلوك، وتُنسخ عند نسخ إعدادات البلوك. تراجع التعارضات قبل Lock / Publish.</p>
    </section>
+   <section class="panel details-editor-panel">
+    <div class="panel-top"><div><h3>05 / الروابط</h3><p>أضف رابطًا وعنوانًا ليظهر QR Code في نهاية الجدول وفي PDF العام.</p></div><span class="icon-mini">🔗</span></div>
+    <div id="qr-links-editor" class="details-editor"></div>
+    <button class="btn light" type="button" id="qr-add-link">+ Add link</button>
+    <p class="small muted">يدعم روابط HTTPS فقط. تأكد من صلاحية مشاركة الرابط قبل نشر الجدول.</p>
+   </section>
    <section class="panel policy-box">
     <div><h3>قواعد التوليد</h3><p>يفحص التغطية اليومية، الإجازات، حد الأيام المتتالية، وفترة الراحة التي تختارها بين الشفتات وفق الأوقات التي تختارها. التوليد التلقائي يحاول إيصال كل طبيب إلى عدد الشفتات المحدد له دون تجاوزه. عدد الأطباء في M/E/N حد أدنى وليس حدًا أقصى. إذا تعارض بلوغ الهدف مع الراحة أو الإجازات فسيظهر النقص بدل تجاوز القيود. يمكنك إضافة شفتات يدويًا من الجدول بعد التأكيد، مع استمرار فحص الإجازات والراحة.</p></div>
     <div class="info-symbol">✓</div>
@@ -328,6 +1586,7 @@ body.cloud-viewer #view-blocks .archive-card-actions [data-open-block]{pointer-e
    <div id="roster-alerts"></div>
    <div id="roster-content"></div>
    <section id="roster-details" class="panel roster-details"></section>
+   <section id="roster-qr-links" class="panel roster-details"></section>
    <section class="panel history-panel no-print"><div class="panel-top"><div><h3>Version History</h3><p>Local approved snapshots (not shared with other devices)</p></div><span id="history-count" class="count-badge">0 versions</span></div><div id="version-history"></div></section>
   </section>
   <section id="view-personal" class="view">
@@ -340,7 +1599,7 @@ body.cloud-viewer #view-blocks .archive-card-actions [data-open-block]{pointer-e
    <div id="report-content"></div>
   </section>
  </main>
- <footer class="footer no-print"><p>ED HMG · Emergency Schedule · v2.0 <span>·</span> يدعم الأرشيف المحلي أو المزامنة المشفّرة بخدمة Supabase بعد ربطها.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
+ <footer class="footer no-print"><p>ED HMG · Emergency Schedule · v2.1 <span>·</span> يدعم الأرشيف المحلي أو المزامنة المشفّرة بخدمة Supabase بعد ربطها.</p><div class="footer-buttons"><button type="button" class="quiet-button" id="backup">حفظ نسخة احتياطية JSON</button><button type="button" class="quiet-button" id="restore">استيراد نسخة احتياطية</button><input type="file" id="restore-file" accept="application/json,.json" hidden></div><p class="caution">⚠️ نموذج تجريبي للإدارة، لا يغني عن اعتماد الجدول وفق لوائح المستشفى والجامعة والإشراف السريري.</p></footer>
 </div>
 <div id="cloud-gate" class="cloud-gate" hidden>
  <div class="cloud-gate-box"><div class="cloud-gate-logo">✚ ED HMG</div><h2>Emergency Schedule · Shared Access</h2><p>Sign in to access the shared roster. Each doctor uses a separate account.</p>
@@ -662,6 +1921,7 @@ function doctorId(){return 'doc-'+Date.now().toString(36)+'-'+Math.random().toSt
 function normalizeOptional(cfg){
  if(!cfg||!Array.isArray(cfg.people))return;
  const used=new Set();cfg.people.forEach(p=>{if(!p.id||used.has(p.id))p.id=doctorId();used.add(p.id);});
+ cfg.splitAreas=!!cfg.splitAreas;cfg.qrLinks=Array.isArray(cfg.qrLinks)?cfg.qrLinks:[];
  cfg.optionalRules??={groups:[],pairs:[]};
  cfg.optionalRules.groups=Array.isArray(cfg.optionalRules.groups)?cfg.optionalRules.groups:[];
  cfg.optionalRules.pairs=Array.isArray(cfg.optionalRules.pairs)?cfg.optionalRules.pairs:[];
@@ -669,7 +1929,7 @@ function normalizeOptional(cfg){
  cfg.optionalRules.pairs=cfg.optionalRules.pairs.filter(p=>p&&used.has(p.juniorId)&&used.has(p.seniorId)&&p.juniorId!==p.seniorId);
 }
 function optionalIsConfigured(cfg){return Boolean(cfg.optionalRules?.groups?.length||cfg.optionalRules?.pairs?.length);}
-function defaults(){return {cfg:{start:'2026-11-01',days:28,maxConsec:5,minRestHours:11,rosterTitle:'Emergency Department Duty Roster',details:[{name:'',role:'',phone:''}],targetShifts:16,times:{M:{start:'07:00',end:'15:00'},E:{start:'15:00',end:'23:00'},N:{start:'23:00',end:'07:00'}},coverage:{M:2,E:2,N:1},people:Array.from({length:8},(_,i)=>({id:'demo-doctor-'+(i+1),name:'Doctor '+String(i+1).padStart(2,'0'),phone:'',off:[]})),optionalRules:{groups:[],pairs:[]}},result:null};}
+function defaults(){return {cfg:{start:'2026-11-01',days:28,maxConsec:5,minRestHours:11,rosterTitle:'Emergency Department Duty Roster',splitAreas:false,qrLinks:[],details:[{name:'',role:'',phone:''}],targetShifts:16,times:{M:{start:'07:00',end:'15:00'},E:{start:'15:00',end:'23:00'},N:{start:'23:00',end:'07:00'}},coverage:{M:2,E:2,N:1},people:Array.from({length:8},(_,i)=>({id:'demo-doctor-'+(i+1),name:'Doctor '+String(i+1).padStart(2,'0'),phone:'',off:[]})),optionalRules:{groups:[],pairs:[]}},result:null};}
 function load(){try{let d=JSON.parse(localStorage.getItem(STORAGE));if(d?.cfg?.people?.length){const x=defaults().cfg;d.cfg.targetShifts??=16;d.cfg.minRestHours??=11;d.cfg.rosterTitle??='Emergency Department Duty Roster';d.cfg.details??=[{name:'',role:'',phone:''}];d.cfg.people.forEach(p=>p.phone??='');normalizeOptional(d.cfg);d.cfg.times??=x.times;for(const t of ['M','E','N'])d.cfg.times[t]??=x.times[t];workflow={locked:!!d.workflow?.locked,publishedId:d.workflow?.publishedId||null,versions:Array.isArray(d.workflow?.versions)?d.workflow.versions:[]};return d;}}catch(_e){}return defaults()}
 function save(){
  try{
@@ -836,8 +2096,8 @@ function renderDetails(){
  panel.innerHTML=`<h3>Details</h3><div class="details-table-wrap"><table class="details-table"><thead><tr><th>Doctor name</th><th>Role</th><th>Contact number</th></tr></thead><tbody>${lines.length?lines.map(p=>`<tr><td>${h(p.name)}</td><td>${h(p.role)}</td><td dir="ltr">${h(p.phone)}</td></tr>`).join(''):'<tr><td colspan="3" class="muted">No contact details entered</td></tr>'}</tbody></table></div>`;
 }
 
-function hydrate(){normalizeOptional(draft); $('rosterTitle').value=draft.rosterTitle;$('minRestHours').value=String(draft.minRestHours);$('start').value=draft.start;$('days').value=String(draft.days);$('targetShifts').value=String(draft.targetShifts);$('maxConsec').value=String(draft.maxConsec);for(const sh of ['M','E','N']){$('cov'+sh).value=String(draft.coverage[sh]);$('start'+sh).value=draft.times[sh].start;$('end'+sh).value=draft.times[sh].end;}personEditor();detailsEditor();renderOptional();render();renderTargetPreview(); }
-function readSettings(){draft.rosterTitle=$('rosterTitle').value.trim();draft.minRestHours=Number($('minRestHours').value);draft.start=$('start').value;draft.days=Number($('days').value);draft.targetShifts=Number($('targetShifts').value);draft.maxConsec=Number($('maxConsec').value);for(const sh of ['M','E','N']){draft.coverage[sh]=Number($('cov'+sh).value);draft.times[sh]={start:$('start'+sh).value,end:$('end'+sh).value};}}
+function hydrate(){normalizeOptional(draft); $('splitAreas').checked=!!draft.splitAreas;$('rosterTitle').value=draft.rosterTitle;$('minRestHours').value=String(draft.minRestHours);$('start').value=draft.start;$('days').value=String(draft.days);$('targetShifts').value=String(draft.targetShifts);$('maxConsec').value=String(draft.maxConsec);for(const sh of ['M','E','N']){$('cov'+sh).value=String(draft.coverage[sh]);$('start'+sh).value=draft.times[sh].start;$('end'+sh).value=draft.times[sh].end;}personEditor();detailsEditor();renderOptional();render();renderTargetPreview(); }
+function readSettings(){draft.splitAreas=$('splitAreas').checked;draft.rosterTitle=$('rosterTitle').value.trim();draft.minRestHours=Number($('minRestHours').value);draft.start=$('start').value;draft.days=Number($('days').value);draft.targetShifts=Number($('targetShifts').value);draft.maxConsec=Number($('maxConsec').value);for(const sh of ['M','E','N']){draft.coverage[sh]=Number($('cov'+sh).value);draft.times[sh]={start:$('start'+sh).value,end:$('end'+sh).value};}}
 function renderTargetPreview(){const el=$('target-preview'),minimum=(draft.coverage.M+draft.coverage.E+draft.coverage.N)*draft.days,goal=draft.people.length*draft.targetShifts;
  el.classList.toggle('mismatch',goal<minimum);el.textContent=`Doctor goal: ${goal} shifts (${draft.targetShifts} × ${draft.people.length}) · Minimum coverage: ${minimum}. `+(goal>minimum?`✓ The scheduler can allocate ${goal-minimum} additional shifts above daily minima to meet doctors' targets.`:goal===minimum?'✓ Targets and daily minimums match.':`⚠️ At least ${minimum-goal} daily minimum slots cannot be covered without exceeding doctors' shift targets.`);
 }
@@ -847,7 +2107,7 @@ function markDirty(){if(workflow.locked){toast('Unlock roster before editing set
 function addPerson(){if(workflow.locked)return toast('Unlock roster before editing.');const input=$('new-person'),name=input.value.trim();if(!name){toast('أدخل اسم الطبيب أولًا');return}if(draft.people.length>=40){toast('الحد الحالي 40 طبيبًا');return}if(draft.people.some(p=>p.name.toLowerCase()===name.toLowerCase())){toast('الاسم موجود مسبقًا');return}draft.people.push({id:doctorId(),name,phone:'',off:[]});input.value='';personEditor();renderOptional();markDirty()}
 function generate(){if(workflow.locked)return toast('Unlock roster before regenerating.');readSettings();const error=G.validInput(draft);if(error){$('generation-status').textContent='⚠️ '+error;toast(error);return}const btn=$('generate');btn.disabled=true;btn.textContent='⏳ يجري توزيع المناوبات...';$('generation-status').textContent='جاري حساب التغطية والإحصائيات.';
  setTimeout(()=>{
-  try{let res=G.generate(draft,{seed:Date.now()%2147483647});if(!res.ok){toast(res.error);$('generation-status').textContent='⚠️ '+res.error;return}const errs=G.audit(draft,res);if(errs.length){toast('تم إيقاف الجدول بسبب تعارض في الفحص.');$('generation-status').textContent='تعارض: '+errs.slice(0,2).join(', ');return}current=res;current.manualShifts={};current.extraShifts={};workflow.publishedId=null;workflow.locked=false;save();const planned=draft.days*(draft.coverage.M+draft.coverage.E+draft.coverage.N),filled=res.counts.reduce((a,x)=>a+x.all,0);$('generation-status').textContent=(res.shortCoverage||res.belowTarget)?`⚠️ Generated ${res.dates.length} days · ${res.shortCoverage||0} coverage gaps · ${res.belowTarget||0} shifts below doctor targets.`:`✅ Generated ${res.dates.length} days · ${filled} shifts · all doctors reached their ${draft.targetShifts}-shift target.`;render();switchTab('roster')}catch(e){$('generation-status').textContent='خطأ غير متوقع: '+e.message;toast('لم ينجح التوليد');}finally{btn.disabled=false;btn.textContent='⚡ توليد الجدول تلقائيًا'}
+  try{let res=G.generate(draft,{seed:Date.now()%2147483647});if(!res.ok){toast(res.error);$('generation-status').textContent='⚠️ '+res.error;return}const errs=G.audit(draft,res);if(errs.length){toast('تم إيقاف الجدول بسبب تعارض في الفحص.');$('generation-status').textContent='تعارض: '+errs.slice(0,2).join(', ');return}current=res;assignAreas(current);current.manualShifts={};current.extraShifts={};workflow.publishedId=null;workflow.locked=false;save();const planned=draft.days*(draft.coverage.M+draft.coverage.E+draft.coverage.N),filled=res.counts.reduce((a,x)=>a+x.all,0);$('generation-status').textContent=(res.shortCoverage||res.belowTarget)?`⚠️ Generated ${res.dates.length} days · ${res.shortCoverage||0} coverage gaps · ${res.belowTarget||0} shifts below doctor targets.`:`✅ Generated ${res.dates.length} days · ${filled} shifts · all doctors reached their ${draft.targetShifts}-shift target.`;render();switchTab('roster')}catch(e){$('generation-status').textContent='خطأ غير متوقع: '+e.message;toast('لم ينجح التوليد');}finally{btn.disabled=false;btn.textContent='⚡ توليد الجدول تلقائيًا'}
  },30);
 }
 function arabicDate(iso){return new Date(iso+'T12:00:00Z').toLocaleDateString('en-US',{day:'2-digit',month:'short',weekday:'short',timeZone:'UTC'})}
@@ -855,6 +2115,15 @@ function groupedDates(dates){let result=[];for(let i=0;i<dates.length;i+=7)resul
 function recount(){if(!current)return;const counts=draft.people.map((p,i)=>({name:p.name,all:0,M:0,E:0,N:0,wknd:0,hours:0}));current.dates.forEach(day=>day.assignments.forEach((s,i)=>{if(isShift(s)){const c=counts[i];c.all++;c[s]++;c.hours+=8;if(G.weekend(day.date))c.wknd++}}));current.counts=counts;}
 function matrixDayLabel(date){return new Date(date+'T12:00:00Z').toLocaleDateString('en-US',{weekday:'short',timeZone:'UTC'});}
 function matrixDateLabel(date){return date.slice(8,10)+'/'+date.slice(5,7);}
+// Physical areas are a label on a shift, not an additional 8-hour shift.
+function assignAreas(result){if(!result?.dates)return;result.areas={};for(const day of result.dates){for(const t of ['M','E','N']){let j=0;day.assignments.forEach((s,i)=>{if(s===t)result.areas[dayKey(day.date,i)]=(j++%2===0?'r':'a');});}}}
+function shiftArea(day,i){if(!draft.splitAreas)return '';if(!current.areas)assignAreas(current);return current.areas[dayKey(day.date,i)]||'r';}
+function codedShift(day,i){const t=displaySlot(day,i);return isShift(t)?t+(draft.splitAreas?shiftArea(day,i):''):t;}
+function qrMatrix(url){const q=new EDQRCode(0,0);q.addData(url);q.make();return q;}
+function qrCanvas(url,size=192){const q=qrMatrix(url),n=q.getModuleCount(),c=document.createElement('canvas'),ctx=c.getContext('2d');c.width=c.height=size;ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);const cell=(size-16)/n;ctx.fillStyle='#101b30';for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(q.isDark(y,x))ctx.fillRect(Math.round(8+x*cell),Math.round(8+y*cell),Math.ceil(cell),Math.ceil(cell));return c;}
+function validateLink(x){try{const u=new URL(x);return u.protocol==='https:'&&u.hostname&&u.href.length<=1200;}catch{return false}}
+function renderQREditor(){const root=$('qr-links-editor');root.innerHTML=(draft.qrLinks||[]).map((v,i)=>`<div class="qr-edit-row"><input data-qr-i="${i}" data-qr-type="title" placeholder="Link title" value="${h(v.title||'')}" ${workflow.locked?'disabled':''}><input data-qr-i="${i}" data-qr-type="url" placeholder="https://example.com" dir="ltr" value="${h(v.url||'')}" ${workflow.locked?'disabled':''}><button class="btn outline" type="button" data-qr-delete="${i}" ${workflow.locked?'disabled':''}>Delete</button></div>`).join('');}
+function renderQRSection(){const el=$('roster-qr-links');el.innerHTML='';const links=(draft.qrLinks||[]).filter(v=>v.title&&validateLink(v.url));if(!current||!links.length){el.hidden=true;return;}el.hidden=false;el.innerHTML='<h3>Links / QR Codes</h3><div class="qr-list"></div>';const wrap=el.querySelector('.qr-list');for(const v of links){const item=document.createElement('div');item.className='qr-entry';try{const code=qrCanvas(v.url,192);item.appendChild(code);const title=document.createElement('strong');title.textContent=v.title;item.appendChild(title);wrap.appendChild(item);}catch(e){const err=document.createElement('span');err.textContent='QR unavailable: '+v.title;wrap.appendChild(err)}}}
 function renderRoster(){
  const target=$('roster-content'),meta=$('roster-meta'),alert=$('roster-alerts');
  if(!current){
@@ -883,18 +2152,18 @@ function renderRoster(){
  const header=dates.map((d,j)=>`<th scope="col" class="${G.weekend(d.date)?'weekend-col':''} ${j>0&&j%7===0?'week-boundary':''}" title="${h(d.date)}"><span class="matrix-day">${h(matrixDayLabel(d.date))}</span><span class="matrix-date">${h(matrixDateLabel(d.date))}</span></th>`).join('');
  const rows=peopleIds.map(i=>{
   const cells=dates.map((d,j)=>{
-   const typ=displaySlot(d,i),extraShift=isExtraShift(d,i),color=typ==='L'?'LEAVE':typ==='-'?'OFF':extraShift?'MANUAL':typ;
-   const opts=[['-','–'],['M','M'],['E','E'],['N','N'],['L','L']].map(([v,label])=>`<option value="${v}" ${v===typ?'selected':''}>${label}</option>`).join('');
+   const typ=displaySlot(d,i),shown=codedShift(d,i),extraShift=isExtraShift(d,i),color=typ==='L'?'LEAVE':typ==='-'?'OFF':extraShift?'MANUAL':typ;
+   const choices=draft.splitAreas?[['-','–'],...['M','E','N'].flatMap(t=>[[t+'r',t+'r'],[t+'a',t+'a']]),['L','L']]:[['-','–'],['M','M'],['E','E'],['N','N'],['L','L']];const opts=choices.map(([v,label])=>`<option value="${v}" ${v===shown?'selected':''}>${label}</option>`).join('');
    const title=typ==='L'?'Leave requested (manual, not a work shift)':extraShift?'Extra shift '+typ:typ==='-'?'Off':typ;
    return `<td class="${typ==='-'?'date-off':''} ${j>0&&j%7===0?'week-boundary':''}"><select class="matrix-shift ${color}" data-day="${j}" data-grid-person="${i}" aria-label="${h(draft.people[i].name)}, ${h(d.date)}: ${h(title)}" title="${h(title)}" ${workflow.locked?'disabled':''}>${opts}</select></td>`;
   }).join('');
   const total=dates.reduce((acc,d)=>acc+(isShift(d.assignments[i])?1:0),0);
   return `<tr><th scope="row" class="matrix-name">${h(draft.people[i].name)}</th>${cells}<td class="matrix-total">${total}</td><td class="matrix-phone" dir="ltr">${h(draft.people[i].phone||'')}</td></tr>`;
  }).join('');
- const footer=['M','E','N'].map(type=>{
-  const cells=dates.map((d,j)=>`<td class="${j>0&&j%7===0?'week-boundary':''}">${d.assignments.filter(t=>t===type).length}</td>`).join('');
-  const total=dates.reduce((sum,d)=>sum+d.assignments.filter(t=>t===type).length,0);
-  return `<tr class="summary-${type}"><th class="matrix-name summary-label">${{M:'Morning',E:'Evening',N:'Night'}[type]}</th>${cells}<td class="matrix-total summary-total">${total}</td><td class="matrix-phone"></td></tr>`;
+ const footer=(draft.splitAreas?['Mr','Ma','Er','Ea','Nr','Na']:['M','E','N']).map(type=>{const base=type[0];
+  const cells=dates.map((d,j)=>`<td class="${j>0&&j%7===0?'week-boundary':''}">${d.assignments.filter((t,i)=>t===base&&(!draft.splitAreas||codedShift(d,i)===type)).length}</td>`).join('');
+  const total=dates.reduce((sum,d)=>sum+d.assignments.filter((t,i)=>t===base&&(!draft.splitAreas||codedShift(d,i)===type)).length,0);
+  return `<tr class="summary-${base}"><th class="matrix-name summary-label">${draft.splitAreas?type+' · '+(type.endsWith('r')?'Resuscitation':'Acute'):{M:'Morning',E:'Evening',N:'Night'}[type]}</th>${cells}<td class="matrix-total summary-total">${total}</td><td class="matrix-phone"></td></tr>`;
  }).join('');
  target.innerHTML=`<div class="roster-legend" aria-label="Shift color legend">${legend}</div><p class="matrix-help">Swipe to view all dates. Doctor names stay fixed on the left. M: yellow · E: green · N: blue · Extra shifts above target: red · L (Leave): black · Off: grey. Counts appear in the three rows at the bottom. ${workflow.locked?'Roster locked: unlock to make changes.':'Tap any cell to edit; extra shifts above the selected limit require confirmation.'}</p><div class="roster-matrix-scroll" tabindex="0" role="region" aria-label="Scrollable doctor shift roster"><table class="roster-matrix" aria-label="Emergency department shift roster"><thead><tr><th scope="col" class="matrix-name">Doctor</th>${header}<th scope="col" class="matrix-total">Total</th><th scope="col" class="matrix-phone">Contact number</th></tr></thead><tbody>${rows}</tbody><tfoot>${footer}</tfoot></table></div><p class="matrix-grid-footnote">All roster labels and weekday abbreviations use English. Red = extra shift above target; black L = leave request (not counted as a shift). Print to PDF to preserve colors.</p>`;
  const newScroll=target.querySelector('.roster-matrix-scroll');
@@ -902,12 +2171,15 @@ function renderRoster(){
  renderWorkflow();
 }
 function changeGridSlot(dayIndex,personIndex,newShift){
+ const areaMatch=/^([MEN])([ra])$/.exec(newShift);
+ const area=areaMatch?areaMatch[2]:null;
+ if(areaMatch)newShift=areaMatch[1];
  if(!current||workflow.locked){render();toast('Unlock roster before editing.');return;}
  if(!['M','E','N','-','L'].includes(newShift))return;
  const day=current.dates[dayIndex],arr=day?.assignments;
  if(!arr||personIndex<0||personIndex>=arr.length)return;
- const previous=displaySlot(day,personIndex);if(previous===newShift)return;
- const prevOff=[...draft.people[personIndex].off],oldAssignment=arr[personIndex],key=dayKey(day.date,personIndex),oldManual=current.manualShifts?.[key],oldExtra=current.extraShifts?.[key];
+ const previous=displaySlot(day,personIndex);if(previous===newShift&&(!area||shiftArea(day,personIndex)===area))return;
+ const oldArea=current.areas?.[dayKey(day.date,personIndex)];const prevOff=[...draft.people[personIndex].off],oldAssignment=arr[personIndex],key=dayKey(day.date,personIndex),oldManual=current.manualShifts?.[key],oldExtra=current.extraShifts?.[key];
  const count=current.dates.reduce((n,d)=>n+(isShift(d.assignments[personIndex])?1:0),0);
  if(!isShift(previous)&&isShift(newShift)&&count>=draft.targetShifts){
   if(!confirm(`${draft.people[personIndex].name} has ${count}/${draft.targetShifts} shifts. Add another shift MANUALLY beyond the selected limit?`)){render();return;}
@@ -915,13 +2187,13 @@ function changeGridSlot(dayIndex,personIndex,newShift){
  // Leave request is a non-work day. A manual L also updates leave dates used by future auto-generation.
  if(newShift==='L')draft.people[personIndex].off=[...new Set([...prevOff,day.date])].sort();
  else draft.people[personIndex].off=prevOff.filter(d=>d!==day.date);
- arr[personIndex]=isShift(newShift)?newShift:'-';
+ arr[personIndex]=isShift(newShift)?newShift:'-';current.areas??={};if(isShift(newShift))current.areas[key]=area||oldArea||'r';else delete current.areas[key];
  current.manualShifts??={};
  if(isShift(newShift))current.manualShifts[key]=newShift;else delete current.manualShifts[key];
  current.extraShifts??={};
  if(isShift(newShift)&&((!isShift(previous)&&count>=draft.targetShifts)||oldExtra!==undefined))current.extraShifts[key]=newShift;else delete current.extraShifts[key];
  const conflicts=G.audit(draft,current);
- if(conflicts.length){arr[personIndex]=oldAssignment;draft.people[personIndex].off=prevOff;
+ if(conflicts.length){if(oldArea===undefined)delete current.areas[key];else current.areas[key]=oldArea;arr[personIndex]=oldAssignment;draft.people[personIndex].off=prevOff;
   if(oldManual===undefined)delete current.manualShifts[key];else current.manualShifts[key]=oldManual;
   if(oldExtra===undefined)delete current.extraShifts[key];else current.extraShifts[key]=oldExtra;
   render();toast('Edit rejected: '+conflicts.slice(0,2).join(' | '));return;}
@@ -949,7 +2221,7 @@ function renderWorkflow(){
  $('new-person').disabled=!!workflow.locked;
  ['rosterTitle','minRestHours','start','days','targetShifts','maxConsec','covM','covE','covN','startM','endM','startE','endE','startN','endN'].forEach(id=>$(id).disabled=!!workflow.locked);
  document.querySelectorAll('.person-name,.person-phone,.off-dates,.remove-person,.detail-edit-row input').forEach(el=>el.disabled=!!workflow.locked);
-  $('add-detail').disabled=!!workflow.locked;renderOptional();
+  $('add-detail').disabled=!!workflow.locked;$('splitAreas').disabled=!!workflow.locked;$('qr-add-link').disabled=!!workflow.locked;renderOptional();
  renderHistory();
 }
 function lockRoster(){
@@ -1012,7 +2284,7 @@ function renderPersonal(){
  const shiftLabels={M:'Morning',E:'Evening',N:'Night','-':'Off',L:'Leave'};
  const summary={M:0,E:0,N:0,'-':0,L:0};
  const cards=current.dates.map(day=>{const t=displaySlot(day,i);summary[t]++;
-  return `<div class="personal-day"><span>${h(arabicDate(day.date))}<small>${day.date}</small></span><strong class="shift-pill ${t==='-'?'OFF':t==='L'?'LEAVE':isManual(day,i)?'MANUAL':t}">${shiftLabels[t]}${isShift(t)?`<small>${h(draft.times[t].start)}–${h(draft.times[t].end)}</small>`:''}</strong></div>`;
+  return `<div class="personal-day"><span>${h(arabicDate(day.date))}<small>${day.date}</small></span><strong class="shift-pill ${t==='-'?'OFF':t==='L'?'LEAVE':isManual(day,i)?'MANUAL':t}">${isShift(t)&&draft.splitAreas?codedShift(day,i):shiftLabels[t]}${isShift(t)?`<small>${h(draft.times[t].start)}–${h(draft.times[t].end)}</small>`:''}</strong></div>`;
  }).join('');
  root.innerHTML=`<div class="personal-top"><b>${h(name)}${draft.people[i].phone?' · '+h(draft.people[i].phone):''}</b><div>${summary.M} M · ${summary.E} E · ${summary.N} N · ${summary['-']} Off · ${summary.L} Leave</div></div><div class="personal-grid">${cards}</div>`;
 }
@@ -1081,7 +2353,7 @@ function pdfRosterPages(){
     const i=first+ki;
     pdfBox(c,margin,y,nameW,rowH,ki%2?'#f5f8fb':'#ffffff');
     pdfText(c,p.name,margin+10,y+rowH/2,{size:13,bold:true,max:nameW-20});
-    daySlice.forEach((d,j)=>{const s=displaySlot(d,i),x=margin+nameW+j*dw;pdfBox(c,x,y,dw,rowH,pdfColorForShift(s,d,i));pdfText(c,s==='-'?'–':s,x+dw/2,y+rowH/2,{size:14,bold:true,align:'center',color:pdfShiftText(s,d,i)});});
+    daySlice.forEach((d,j)=>{const s=displaySlot(d,i),x=margin+nameW+j*dw;pdfBox(c,x,y,dw,rowH,pdfColorForShift(s,d,i));pdfText(c,s==='-'?'–':codedShift(d,i),x+dw/2,y+rowH/2,{size:14,bold:true,align:'center',color:pdfShiftText(s,d,i)});});
     const count=dates.reduce((n,d)=>n+(isShift(d.assignments[i])?1:0),0);
     pdfBox(c,rx,y,totalW,rowH,count>draft.targetShifts?'#f8cfd0':'#f6f9fb');pdfText(c,count,rx+totalW/2,y+rowH/2,{size:13,bold:true,align:'center'});
     pdfBox(c,rx+totalW,y,phoneW,rowH,'#f6f9fb');pdfText(c,p.phone||'',rx+totalW+8,y+rowH/2,{size:11,max:phoneW-16});
@@ -1114,6 +2386,9 @@ function pdfRosterPages(){
    pages.push(pdfPageFinish(page));
   }
  }
+ // QR codes appear at the end of the full duty roster PDF, following the roster/Details.
+ const qrLinks=(draft.qrLinks||[]).filter(v=>v.title&&validateLink(v.url));
+ for(let at=0;at<qrLinks.length;at+=8){const batch=qrLinks.slice(at,at+8),p=pdfPage(W,H),ctx=p.c;pdfFrame(p,draft.rosterTitle||'Emergency Department Duty Roster','Links / QR Codes');batch.forEach((v,j)=>{const x=105+(j%4)*360,y=215+Math.floor(j/4)*350;try{ctx.drawImage(qrCanvas(v.url,224),x+40,y,224,224);pdfText(ctx,v.title,x+152,y+249,{align:'center',size:17,bold:true,max:320});}catch(e){pdfText(ctx,'QR unavailable',x,y,{size:16});}});pages.push(pdfPageFinish(p));}
  return pages;
 }
 function pdfPersonalPages(){
@@ -1130,7 +2405,7 @@ function pdfPersonalPages(){
   if(p.phone)pdfText(c,p.phone,W-margin-12,190,{size:13,align:'right',color:ED_PDF.secondary});
   const ncol=3,gap=10,w=(W-2*margin-gap*(ncol-1))/ncol,h=76,top=260;
   slice.forEach((day,j)=>{
-    const s=displaySlot(day,i),x=margin+(j%3)*(w+gap),y=top+Math.floor(j/3)*(h+8),fill=pdfColorForShift(s,day,i),label=s==='M'?'Morning':s==='E'?'Evening':s==='N'?'Night':s==='L'?'Leave':'Off';
+    const s=displaySlot(day,i),x=margin+(j%3)*(w+gap),y=top+Math.floor(j/3)*(h+8),fill=pdfColorForShift(s,day,i),label=isShift(s)?codedShift(day,i):s==='L'?'Leave':'Off';
     pdfBox(c,x,y,w,h,'#ffffff');
     pdfText(c,matrixDayLabel(day.date)+'  '+matrixDateLabel(day.date),x+11,y+20,{size:13,bold:true});
     pdfBox(c,x+10,y+39,w-20,28,fill,fill);
@@ -1177,20 +2452,20 @@ function edDirectPdf(kind){
  }catch(error){console.error('PDF export failed',error);toast('Could not create PDF: '+(error.message||'unknown error'));}
 }
 
-function exportPersonal(){if(!current){toast('أنشئ الجدول أولًا');return}const i=Number($('selected-person').value),rows=[['Date','Day','Doctor','Shift','Start','End']];const tm={M:[draft.times.M.start,draft.times.M.end],E:[draft.times.E.start,draft.times.E.end],N:[draft.times.N.start,draft.times.N.end],'-':['','']};for(const day of current.dates){const t=displaySlot(day,i);rows.push([day.date,arabicDate(day.date),draft.people[i].name,t==='-'?'Off':t==='L'?'Leave':(isExtraShift(day,i)?t+' (Extra)':t),t==='L'?'':tm[t][0],t==='L'?'':tm[t][1]])};downloadFile(`ED_Doctor_${i+1}_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
-function render(){renderRoster();renderDetails();renderReport();renderPersonal();}
+function exportPersonal(){if(!current){toast('أنشئ الجدول أولًا');return}const i=Number($('selected-person').value),rows=[['Date','Day','Doctor','Shift','Start','End']];const tm={M:[draft.times.M.start,draft.times.M.end],E:[draft.times.E.start,draft.times.E.end],N:[draft.times.N.start,draft.times.N.end],'-':['','']};for(const day of current.dates){const t=displaySlot(day,i);rows.push([day.date,arabicDate(day.date),draft.people[i].name,t==='-'?'Off':t==='L'?'Leave':(isExtraShift(day,i)?codedShift(day,i)+' (Extra)':codedShift(day,i)),t==='L'?'':tm[t][0],t==='L'?'':tm[t][1]])};downloadFile(`ED_Doctor_${i+1}_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
+function render(){renderRoster();renderDetails();renderQRSection();renderReport();renderPersonal();renderQREditor();}
 function downloadFile(filename,content,mime){const b=new Blob([content],{type:mime}),link=document.createElement('a'),url=URL.createObjectURL(b);link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 function csvText(rows){const esc=(s)=>'"'+String(s??'').replace(/"/g,'""')+'"';return '\ufeff'+rows.map(row=>row.map(esc).join(',')).join('\r\n')}
 function exportMatrix(){
  if(!current){toast('أنشئ الجدول أولًا');return;}
  const dates=current.dates;
  const rows=[['Doctor',...dates.map(d=>matrixDayLabel(d.date)+' '+d.date),'Total shifts','Contact number'],...draft.people.map((p,i)=>{
-  const cells=dates.map(d=>{const t=displaySlot(d,i);return t==='-'?'Off':t==='L'?'L':(isExtraShift(d,i)?t+' (Extra)':t)});
+  const cells=dates.map(d=>{const t=displaySlot(d,i);return t==='-'?'Off':t==='L'?'L':(isExtraShift(d,i)?codedShift(d,i)+' (Extra)':codedShift(d,i))});
   return [p.name,...cells,dates.filter(d=>isShift(d.assignments[i])).length,p.phone||''];
  }),...['M','E','N'].map(type=>[{M:'Morning',E:'Evening',N:'Night'}[type],...dates.map(d=>d.assignments.filter(t=>t===type).length),dates.reduce((sum,d)=>sum+d.assignments.filter(t=>t===type).length,0),''])];
  downloadFile(`ED_Roster_Matrix_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8');
 }
-function exportDaily(){if(!current){toast('أنشئ الجدول أولًا');return}let rows=[['Date','Weekday','Shift','Start','End','Doctor','Contact number']];for(const day of current.dates)for(const typ of ['M','E','N'])day.assignments.forEach((x,i)=>{if(x===typ)rows.push([day.date,arabicDate(day.date),typ,draft.times[typ].start,draft.times[typ].end,draft.people[i].name,draft.people[i].phone||''])});downloadFile(`ED_Roster_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
+function exportDaily(){if(!current){toast('أنشئ الجدول أولًا');return}let rows=[['Date','Weekday','Shift','Start','End','Doctor','Contact number']];for(const day of current.dates)for(const typ of ['M','E','N'])day.assignments.forEach((x,i)=>{if(x===typ)rows.push([day.date,arabicDate(day.date),codedShift(day,i),draft.times[typ].start,draft.times[typ].end,draft.people[i].name,draft.people[i].phone||''])});downloadFile(`ED_Roster_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
 function exportReport(){if(!current){toast('أنشئ الجدول أولًا');return}recount();const rows=[['Doctor','Morning','Evening','Night','Weekend','Leave','Extra','All shifts','Target shifts','Difference','Hours'],...current.counts.map((p,i)=>[p.name,p.M,p.E,p.N,p.wknd,current.dates.filter(d=>leaveDay(d.date,i)).length,current.dates.filter(d=>isExtraShift(d,i)).length,p.all,draft.targetShifts,p.all-draft.targetShifts,p.hours])];downloadFile(`ED_Statistics_${draft.start}.csv`,csvText(rows),'text/csv;charset=utf-8')}
 function exportBackup(){readSettings();downloadFile(`ED_Scheduler_Backup_${draft.start}.json`,JSON.stringify({cfg:draft,result:current,workflow,version:2},null,2),'application/json')}
 function restoreBackup(file){const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!data.cfg||!Array.isArray(data.cfg.people))throw Error('invalid');const defaultCfg=defaults().cfg;data.cfg.targetShifts??=16;data.cfg.minRestHours??=11;data.cfg.rosterTitle??='Emergency Department Duty Roster';data.cfg.details??=[{name:'',role:'',phone:''}];data.cfg.people.forEach(p=>p.phone??='');normalizeOptional(data.cfg);data.cfg.times??=defaultCfg.times;for(const t of ['M','E','N'])data.cfg.times[t]??=defaultCfg.times[t];const error=G.validInput(data.cfg);if(error)throw Error(error);draft=data.cfg;current=data.result||null;migrateExtraShifts(current,draft);workflow={locked:!!data.workflow?.locked,publishedId:data.workflow?.publishedId||null,versions:Array.isArray(data.workflow?.versions)?data.workflow.versions:[]};if(current&&(!Array.isArray(current.dates)||current.dates.length!==draft.days||G.audit(draft,current).length))current=null;save();hydrate();toast('تم استيراد النسخة بنجاح')}catch(err){toast('نسخة غير صالحة: '+(err.message||''))}};reader.readAsText(file)}
@@ -1212,7 +2487,11 @@ function init(){const initial=load();draft=initial.cfg;current=initial.result;lo
   $('compare-run').addEventListener('click',compareBlocks);
   $('compare-a').addEventListener('change',()=>{archiveCompareA=$('compare-a').value;});
   $('compare-b').addEventListener('change',()=>{archiveCompareB=$('compare-b').value;});
- $('rosterTitle').addEventListener('change',()=>{if(workflow.locked)return;draft.rosterTitle=$('rosterTitle').value.trim();workflow.publishedId=null;save();render()});
+ $('splitAreas').addEventListener('change',()=>{if(workflow.locked){$('splitAreas').checked=!!draft.splitAreas;return;}draft.splitAreas=$('splitAreas').checked;workflow.publishedId=null;save();render();});
+ $('qr-add-link').addEventListener('click',()=>{if(workflow.locked)return;draft.qrLinks.push({title:'',url:''});workflow.publishedId=null;save();render();});
+ $('qr-links-editor').addEventListener('change',e=>{const f=e.target.closest('[data-qr-i]');if(!f||workflow.locked)return;draft.qrLinks[+f.dataset.qrI][f.dataset.qrType]=f.value.trim();workflow.publishedId=null;save();render();});
+ $('qr-links-editor').addEventListener('click',e=>{const b=e.target.closest('[data-qr-delete]');if(!b||workflow.locked)return;draft.qrLinks.splice(+b.dataset.qrDelete,1);workflow.publishedId=null;save();render();});
+ $('rosterTitle').addEventListener('change' ,()=>{if(workflow.locked)return;draft.rosterTitle=$('rosterTitle').value.trim();workflow.publishedId=null;save();render()});
  for(const id of ['minRestHours','start','days','targetShifts','maxConsec','covM','covE','covN','startM','endM','startE','endE','startN','endN'])$(id).addEventListener('change',()=>{readSettings();markDirty()});
  $('people-editor').addEventListener('input',(e)=>{const ip=e.target;if(ip.classList.contains('person-name')){draft.people[+ip.dataset.person].name=ip.value;markDirty()}else if(ip.classList.contains('off-dates')){draft.people[+ip.dataset.off].off=parseOff(ip.value);markDirty()}else if(ip.classList.contains('person-phone')){draft.people[+ip.dataset.phone].phone=ip.value;workflow.publishedId=null;save();render();}});
  $('details-editor').addEventListener('input',e=>{const field=e.target.closest('input[data-detail]');if(!field||workflow.locked)return;draft.details[+field.dataset.detail][field.dataset.detailKey]=field.value;workflow.publishedId=null;save();renderDetails()});
